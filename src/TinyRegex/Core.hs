@@ -34,7 +34,7 @@ data RegexComp =
     | ZeroOrOne [RegexComp]
     | ZeroOrMany [RegexComp]
     | Alternative [RegexComp] [RegexComp]
-    | GroupStart | GroupEnd | Start | End
+    | GroupStart Int | GroupEnd Int | Start | End
     deriving (Show)
 
 data RegexOutput =

@@ -28,6 +28,7 @@ library
       Lib
       TinyRegex.Core
       TinyRegex.Engine
+      TinyRegex.Evaluate
       TinyRegex.Parser
       TinyRegex.Pretty
   other-modules:
