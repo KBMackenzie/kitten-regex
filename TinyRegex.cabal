@@ -37,7 +37,10 @@ library
   ghc-options: -O3 -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
       base >=4.7 && <5
+    , megaparsec
+    , mtl
     , text
+    , transformers
   default-language: Haskell2010
 
 executable TinyRegex-exe
@@ -50,7 +53,10 @@ executable TinyRegex-exe
   build-depends:
       TinyRegex
     , base >=4.7 && <5
+    , megaparsec
+    , mtl
     , text
+    , transformers
   default-language: Haskell2010
 
 test-suite TinyRegex-test
@@ -64,5 +70,8 @@ test-suite TinyRegex-test
   build-depends:
       TinyRegex
     , base >=4.7 && <5
+    , megaparsec
+    , mtl
     , text
+    , transformers
   default-language: Haskell2010

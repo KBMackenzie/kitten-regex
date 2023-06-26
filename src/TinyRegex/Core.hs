@@ -6,7 +6,6 @@ module TinyRegex.Core
 , RegexComp(..)
 , RegexOutput(..)
 , RegexEngine
-, ParserMonad(..)
 ) where
 
 import qualified Data.Text as Text
@@ -27,15 +26,15 @@ data RegexAST =
     | MatchPlus RegexAST
     | MatchQues RegexAST
     | LineStart | LineEnd
-    | EmptyTransition
     deriving (Show)
 
 data RegexComp =
       Sequence Text.Text
     | Character Predicate
-    | ZeroOrOne RegexComp
-    | Alternative RegexComp RegexComp
-    | GroupStart Int | GroupEnd Int
+    | ZeroOrOne [RegexComp]
+    | ZeroOrMany [RegexComp]
+    | Alternative [RegexComp] [RegexComp]
+    | GroupStart | GroupEnd | Start | End
     deriving (Show)
 
 data RegexOutput =

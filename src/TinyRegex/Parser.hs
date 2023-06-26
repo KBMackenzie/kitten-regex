@@ -1,216 +1,193 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE LambdaCase #-}
 
 module TinyRegex.Parser
-(
+( Parser
+, parseExpr
+, parseRegex
+, isWordChar
 ) where
 
-import TinyRegex.Core (RegexAST(..), Predicate(..), ParserMonad(..))
-import TinyRegex.Pretty (prettyError)
+import TinyRegex.Core
 import qualified Data.Text as Text
-import Control.Applicative ((<|>), empty, liftA2)
-import Data.Char (isDigit, isSpace, isAlphaNum,  toLower)
-import Data.Bifunctor (first, second)
-import Text.Read (readMaybe)
-import Data.List (singleton)
+import Text.Megaparsec ((<|>))
+import qualified Text.Megaparsec as Mega
+import qualified Text.Megaparsec.Char as MChar
+import qualified Text.Megaparsec.Char.Lexer as Lexer
+import Text.Megaparsec.Error (errorBundlePretty)
+import Control.Monad (void, liftM2)
+import Data.Maybe (isJust)
+import Data.Char (isDigit, isAlphaNum, isSpace)
+import Data.Void (Void)
 
-{- Parser with no dependencies outside of Data.Text.
- -
- - Supports the following regex characters:
- - + * and ?
- - [a-zA-Z0-9] (character classes)
- - (a|b) (alternatives + capture groups)
- -
- - Should parse the following examples:
- - - ab*c+(a|b+){2,}[a-zA-Z0-9]{2, 6}
- -}
+type Parser = Mega.Parsec Void Text.Text
 
-type Parser a = ParserMonad (a, Text.Text)
+parsePlus :: Parser (RegexAST -> RegexAST)
+parsePlus = MatchPlus <$ MChar.char '+'
 
-{- Helpers-}
------------------------------------------------------------------
-parse :: Text.Text -> Parser [RegexAST]
-parse txt = trace txt (parseTokens txt)
+parseStar :: Parser (RegexAST -> RegexAST)
+parseStar = MatchStar <$ MChar.char '*'
 
-trace :: Text.Text -> Parser a -> Parser a
-trace x (Left e) = (Left . Text.concat) [ e, "\nString: ", x ]
-trace _ p = p
+parseQues :: Parser (RegexAST -> RegexAST)
+parseQues = MatchQues <$ MChar.char '?'
 
-consMP :: (a, Text.Text) -> MaybeParse [a] -> MaybeParse [a]
-(x, _ ) `consMP` Just (xs, t2)  = Just (x:xs, t2)
-(x, t1) `consMP` Nothing        = Just ([x],  t1)
+braces :: Parser a -> Parser a
+braces = Mega.between (MChar.char '{') (MChar.char '}')
 
-mpAsParser :: MaybeParse a -> Parser a
-mpAsParser (Just x) = Right x
-mpAsParser Nothing  = Left "Unexpected input: "
+parseCount :: Parser (RegexAST -> RegexAST)
+parseCount = Count <$> braces Lexer.decimal
 
-catchError :: Parser a -> (Text.Text -> Parser a) -> Parser a
-catchError (Left x) fn = fn x
-catchError x _ = x
+parseRange :: Parser (RegexAST -> RegexAST)
+parseRange = braces $ do
+    start <- Mega.optional Lexer.decimal
+    (void . MChar.char) ','
+    end   <- Mega.optional Lexer.decimal
+    return (CountRange start end)
+
+parseNumRange :: Parser (RegexAST -> RegexAST)
+parseNumRange = Mega.try parseCount <|> parseRange
+
+postfixes :: [Parser (RegexAST -> RegexAST)]
+postfixes = 
+    [ parsePlus
+    , parseStar
+    , parseQues ]
+
+--manyPostfixes :: Parser (RegexAST -> RegexAST)
+--manyPostfixes = foldl1 (flip (.)) <$> Mega.some parsePostfix
+
+parsePostfix :: Parser (RegexAST -> RegexAST)
+parsePostfix = Mega.choice postfixes
+
+reserved :: [Char]
+reserved = [ '*', '.', '?', '+', '^', '$', '{', '(', ')', '[', ']', '|', '\\' ]
+
+operators :: [Char]
+operators = [ '*', '?', '+', '{' ]
+
+isOperator :: Parser Bool
+isOperator = True <$ Mega.satisfy (`elem` operators)
+
+escapeChar :: [Char] -> Parser Char
+escapeChar xs = Mega.choice
+    [ '*'   <$ MChar.string "\\*"
+    , '.'   <$ MChar.string "\\."
+    , '?'   <$ MChar.string "\\?"
+    , '+'   <$ MChar.string "\\+"
+    , '^'   <$ MChar.string "\\^"
+    , '$'   <$ MChar.string "\\$"
+    , '('   <$ MChar.string "\\("
+    , ')'   <$ MChar.string "\\)"
+    , '['   <$ MChar.string "\\["
+    , ']'   <$ MChar.string "\\]"
+    , '|'   <$ MChar.string "\\|"
+    , '-'   <$ MChar.string "\\-"
+    , '\\'  <$ MChar.string "\\\\"
+    , '\n'  <$ MChar.string "\\n"
+    , '\b'  <$ MChar.string "\\b"
+    , '\t'  <$ MChar.string "\\t"
+    , '\f'  <$ MChar.string "\\f"
+    , '{'   <$ (MChar.char '{' >> Mega.notFollowedBy MChar.digitChar)
+    , Mega.satisfy (`notElem` xs) ]
+
+
+{- Parse terms -}
+
+parseLineStart :: Parser RegexAST
+parseLineStart = LineStart <$ MChar.char '^'
+
+parseLineEnd :: Parser RegexAST
+parseLineEnd = LineEnd <$ MChar.char '$'
+
+parseDot :: Parser RegexAST
+parseDot = AnyChar <$ MChar.char '.'
+
+parseChar :: Parser RegexAST
+parseChar = Verbatim . Text.singleton <$> escapeChar reserved
+
+parseVerbatim :: Parser RegexAST
+parseVerbatim = Verbatim . Text.pack <$> Mega.some char
+    where char = Mega.try $ escapeChar reserved <* Mega.notFollowedBy isOperator
+
+parseSpecial :: Parser (Char -> Bool)
+parseSpecial = Mega.choice
+    [ isDigit              <$ MChar.string "\\d"
+    , isSpace              <$ MChar.string "\\s"
+    , isWordChar           <$ MChar.string "\\w"
+    , (not . isDigit)      <$ MChar.string "\\D"
+    , (not . isSpace)      <$ MChar.string "\\S"
+    , (not . isWordChar)   <$ MChar.string "\\W" ]
+
+parseSpecial' :: Parser RegexAST
+parseSpecial' = CharacterClass . Predicate <$> parseSpecial
+
+{- Parsing character ranges (e.g. [a-Z]) -}
+
+charRange :: Parser (Char -> Bool)
+charRange = do
+    a <- escapeChar [ '\\', ']' ]
+    (void . MChar.char) '-'
+    b <- escapeChar [ '\\', ']' ]
+    return (\x -> x `elem` [a..b])
 
 isWordChar :: Char -> Bool
 isWordChar x = isAlphaNum x || x == '_'
 
-escapeChar :: Char -> Char
-escapeChar x = case x of
-   'n' -> '\n'
-   'f' -> '\f'
-   'b' -> '\b'
-   't' -> '\t'
-   _   -> x
+brackets :: Parser a -> Parser a
+brackets = Mega.between (MChar.char '[') (MChar.char ']')
 
-charClass :: Char -> Char -> Bool
-charClass 'd' = isDigit
-charClass 's' = isSpace
-charClass 'w' = isWordChar
-charClass 'D' = not . isDigit
-charClass 'S' = not . isSpace
-charClass 'W' = not . isWordChar
-charClass x   = (== x) -- This should never be reached.
+parseCharClass :: Parser RegexAST
+parseCharClass = brackets $ do
+    fns <- Mega.many (Mega.try charRange <|> parseSpecial <|> charPred)
+    isNot <- isJust <$> Mega.optional (MChar.char '^')
+    let predicate = foldr (liftM2 (||)) (const False) fns
+    (return . CharacterClass . Predicate) (if isNot then not . predicate else predicate)
+    where
+        char = escapeChar [ '\\', ']' ] <* Mega.notFollowedBy (MChar.char '-')
+        charPred = (==) <$> Mega.try char
 
-reserved :: [Char]
-reserved  = [ '*', '+', '.', '?', '{', '}', '[', ']', '(', ')', '|', '-' ]
+{- Capture groups -}
+parens :: Parser a -> Parser a
+parens = Mega.between (MChar.char '(') (MChar.char ')')
 
-operators :: [Char]
-operators = [ '*', '+', '?', '{' ]
-
-closing :: [Char]
-closing = [ '}', ']', ')' ]
-
-followedBy :: (Char -> Bool) -> Text.Text -> Bool
-followedBy fn txt = not (Text.null txt) && (fn . Text.head) txt
-
-notFollowedBy :: (Char -> Bool) -> Text.Text -> Bool
-notFollowedBy = (not .) . followedBy
+parseGroup :: Parser RegexAST
+parseGroup = MatchGroup <$> parens parseTokens
 
 
-{- Parsing -}
------------------------------------------------------------------
-parseChar :: (Char -> Bool) -> Text.Text -> MaybeParse Char
-parseChar fn txt = Text.uncons txt >>= \char@(x, _) ->
-    if fn x then Just char else Nothing
+{- Combining everything: -}
 
-parseSpecial :: Text.Text -> MaybeParse Predicate
-parseSpecial txt = parseChar (== '\\') txt >>= \(x, rest) ->
-    if toLower x `elem` [ 's', 'd', 'w' ]
-        then let special = Predicate . charClass
-             in Just (special x, rest)
-        else Nothing
+parseTerm :: Parser RegexAST
+parseTerm = Mega.choice
+    [ parseLineStart
+    , parseLineEnd
+    , parseCharClass
+    , parseDot
+    , parseGroup
+    , parseSpecial'
+    , parseVerbatim
+    , parseChar     ]
 
-parseEscape :: Text.Text -> MaybeParse Char
-parseEscape txt = first escapeChar <$> parseChar (const True) txt 
+parseToken :: Parser RegexAST
+parseToken = do
+    term  <- parseTerm
+    p1    <- parseNumRange <|> return id
+    p2    <- parsePostfix <|> return id
+    (return . p2 . p1) term
 
-singleChar :: (Char -> Bool) -> Text.Text -> MaybeParse Char
-singleChar isValid txt = case Text.uncons txt of
-    Nothing -> Nothing
-    (Just ('\\', xs)) -> parseEscape xs
-    (Just (x,  rest)) -> if isValid x then Just (x, rest) else Nothing
+parseAlt :: Parser ([RegexAST] -> RegexAST)
+parseAlt = flip AlternativeGroup <$> (MChar.char '|' >> parseTokens)
 
-parseSeq :: (Char -> Bool) -> Text.Text -> MaybeParse [Char]
-parseSeq isValid txt = singleChar isValid txt >>= \(x, rest) ->
-    if followedBy (`elem` operators) rest
-        then Nothing
-        else (x, rest) `consMP` parseSeq isValid rest
+parseTokens :: Parser [RegexAST]
+parseTokens = do
+    xs <- Mega.many parseToken
+    Mega.optional parseAlt >>= \case
+        Nothing   -> return xs
+        (Just fn) -> return [fn xs]
 
-parseText :: Text.Text -> MaybeParse RegexAST
-parseText txt = foldl (<|>) empty
-    [ first (const AnyChar) <$> parseChar (== '.') txt
-    , first CharacterClass  <$> parseSpecial txt
-    , first (Verbatim . Text.pack) <$> parseSeq (`notElem` reserved) txt
-    , first (Verbatim . Text.singleton) <$> parseChar (`notElem` reserved) txt ]
+parseExpr :: Parser [RegexAST]
+parseExpr = parseTokens <* Mega.eof
 
-
-{- Character class [a-zA-Z0-9] -}
------------------------------------------------------------------
-validClassChar :: Char -> Bool
-validClassChar = flip notElem [ '\\', ']' ]
-
-charRange :: Text.Text -> MaybeParse (Char -> Bool)
-charRange txt = do
-    (a, r1) <- singleChar validClassChar txt
-    (_, r2) <- parseChar (== '-') r1
-    (b, r3) <- singleChar validClassChar r2
-    Just ((`elem` [a..b]), r3)
-
-charPred :: Text.Text -> MaybeParse (Char -> Bool)
-charPred txt = first (==) <$> singleChar validClassChar txt
-
-classChars :: Text.Text -> MaybeParse [Char -> Bool]
-classChars txt = let chars = charRange txt <|> charPred txt
-    in chars >>= \(x, rest) -> (x, rest) `consMP` classChars rest
-
-parseClass' :: Text.Text -> Parser RegexAST
-parseClass' txt = case classChars txt of
-    (Just (fs, r1)) -> case snd <$> parseChar (== ']') r1 of
-        (Just rest) -> do
-            let ps = foldl (liftA2 (||)) (const False) fs
-            Right (makeToken ps, rest)
-        Nothing     -> Left (prettyError "Unclosed character class:" r1)
-    Nothing -> Left (prettyError "Invalid character in character class:" txt)
-    where makeToken = CharacterClass . Predicate
-
-
-{- Numeric range {2, 6} -}
------------------------------------------------------------
-singleNum :: Text.Text -> MaybeParse (RegexAST -> RegexAST)
-singleNum txt = parseSeq isDigit txt >>= \(s, r1) -> do
-    n <- readMaybe s :: Maybe Int
-    (_, r2) <- parseChar (== '}') r1
-    Just (Count n, r2)
-
-numRange :: Text.Text -> MaybeParse (RegexAST -> RegexAST)
-numRange txt = do 
-    (s1, r1) <- parseSeq isDigit txt
-    let a = readMaybe s1 :: Maybe Int
-    (_,  r2) <- parseChar (== ',') r1
-    (s2, r3) <- parseSeq isDigit r2
-    let b = readMaybe s2 :: Maybe Int
-    (_ , r4) <- parseChar (== '}') r3
-    Just (CountRange a b, r4)
-
-parseRange :: Text.Text -> MaybeParse (RegexAST -> RegexAST)
-parseRange txt = singleNum txt <|> numRange txt
-
-
-{- Parse groups (a, b) -}
------------------------------------------------------------
-parseGroup :: Text.Text -> Parser RegexAST
-parseGroup txt = do
-    (xs, r1) <- parseTokens txt
-    case parseChar (== ')') r1 of
-        (Just (_, r2)) -> Right (MatchGroup xs, r2)
-        Nothing -> Left (prettyError "Unclosed group:" txt)
-
-
-{- Parse groups (a, b) -}
------------------------------------------------------------
-parseOps :: Text.Text -> MaybeParse (RegexAST -> RegexAST)
-parseOps txt = foldl (<|>) empty
-    [ first (const MatchStar) <$> parseChar (== '*') txt
-    , first (const MatchPlus) <$> parseChar (== '+') txt
-    , first (const MatchQues) <$> parseChar (== '?') txt ]
-
-
-{- Parse token -}
------------------------------------------------------------
-parseToken :: Text.Text -> Parser RegexAST
-parseToken txt
-    | x == '('              = parseGroup xs
-    | x == '['              = parseClass' xs
-    | x `notElem` closing   = case parseText txt of
-        (Just (y, rest)) -> Right (y, rest)
-        Nothing          -> Left unexpected
-    | otherwise             = Left unexpected
-    where -- Intentionally partial function.
-        x = Text.head txt
-        xs = Text.tail txt
-        unexpected = prettyError "Unexpected character:" txt
-
-parseToken' :: Text.Text -> Parser RegexAST
-parseToken' txt = do
-    (tok, r1) <- parseToken txt
-    Left ""
-
-parseTokens :: Text.Text -> Parser [RegexAST]
-parseTokens txt
-    | Text.null txt = Right ([], txt)
-    | otherwise = parseToken txt >>= \(x, rest) -> first (x:) <$> parseTokens rest
+parseRegex :: Text.Text -> Either Text.Text [RegexAST]
+parseRegex contents = case Mega.parse parseExpr "<regex>" contents of
+    (Left x)  -> (Left . Text.pack . errorBundlePretty) x
+    (Right x) -> Right x
