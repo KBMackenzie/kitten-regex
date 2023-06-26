@@ -1,0 +1,2 @@
+system-ghc: true
+resolver: ghc-9.2.7
