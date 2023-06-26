@@ -1,14 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module TinyRegex.Parser
-( Parser
-, parse
-, parseSeq
-, parseChar
-, parseClass'
+(
 ) where
 
-import TinyRegex.Core (RegexAST(..), Predicate(..))
+import TinyRegex.Core (RegexAST(..), Predicate(..), ParserMonad(..))
 import TinyRegex.Pretty (prettyError)
 import qualified Data.Text as Text
 import Control.Applicative ((<|>), empty, liftA2)
@@ -28,9 +24,7 @@ import Data.List (singleton)
  - - ab*c+(a|b+){2,}[a-zA-Z0-9]{2, 6}
  -}
 
-type Parser a = Either Text.Text (a, Text.Text)
-type MaybeParse a = Maybe (a, Text.Text)
-
+type Parser a = ParserMonad (a, Text.Text)
 
 {- Helpers-}
 -----------------------------------------------------------------

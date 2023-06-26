@@ -6,6 +6,7 @@ module TinyRegex.Core
 , RegexComp(..)
 , RegexOutput(..)
 , RegexEngine
+, ParserMonad(..)
 ) where
 
 import qualified Data.Text as Text
@@ -45,26 +46,26 @@ data RegexOutput =
 type RegexEngine = Maybe ([RegexOutput], Text.Text)
 
 
-{- Parser -}
+{- ParserMonad -}
 ----------------------------------------------------
 
-data Parser a =
+data ParserMonad a =
       Parsing a
     | Failure 
     | ParseError Text.Text
 
-instance Functor Parser where
+instance Functor ParserMonad where
     fmap _ Failure          = Failure
     fmap _ (ParseError e)   = ParseError e
     fmap f (Parsing x)      = Parsing (f x)
 
-instance Applicative Parser where
+instance Applicative ParserMonad where
     pure = Parsing
     Failure <*> _ = Failure
     Parsing f <*> x = f <$> x
     ParseError e <*> _ = ParseError e
 
-instance Monad Parser where
+instance Monad ParserMonad where
     return = pure
     Parsing x >>= f = f x
     Failure >>= _ = Failure
@@ -72,7 +73,7 @@ instance Monad Parser where
 
 {- I'm unsure if this satisfies the laws of the Alternative typeclass.
  - It looooooooooks like it does? -}
-instance Alternative Parser where
+instance Alternative ParserMonad where
     empty = Failure
     Failure <|> x = x
-    x <|> x
+    x <|> _ = x
