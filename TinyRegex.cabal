@@ -29,6 +29,7 @@ library
       TinyRegex.Core
       TinyRegex.Engine
       TinyRegex.Parser
+      TinyRegex.Pretty
   other-modules:
       Paths_TinyRegex
   hs-source-dirs:
