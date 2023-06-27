@@ -23,8 +23,8 @@ data RegexAST =
     | AlternativeGroup [RegexAST] [RegexAST]
     | MatchGroup [RegexAST]
     | MatchStar RegexAST
-    | MatchPlus RegexAST
     | MatchQues RegexAST
+    | MatchPlus RegexAST
     | LineStart | LineEnd
     deriving (Show)
 

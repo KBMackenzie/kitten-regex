@@ -12,13 +12,13 @@ import Data.Functor ((<&>))
 import TinyRegex.Parser (parseRegex)
 import TinyRegex.Engine (compile)
 import Data.Either (fromRight)
-import Data.List (singleton)
+import Data.List (singleton, groupBy)
 import Data.Bifunctor (first)
 
 type Input = Text.Text
 type Output = [Evaluated]
 type Evaluator = Maybe (Output, Input)
-data Evaluated = TextOutput Text.Text | Label Int
+data Evaluated = TextOutput Text.Text | Label Int deriving (Show)
 
 evalPack :: Text.Text -> [Evaluated]
 evalPack =  singleton . TextOutput
@@ -37,11 +37,11 @@ evaluate input (x:xs) = case x of
             then (evalPackC c `consMP`) <$> evaluate rest xs
             else empty
     (ZeroOrMany zs) -> do --todo: done: fixed mistake in here
-        let pathA = evaluate input (zs ++ xs)
+        let pathA = evaluate input zs >>= continue (x:xs)
         let pathB = evaluate input xs
         pathA <|> pathB
     (ZeroOrOne  zs) -> do
-        let pathA = evaluate input (zs ++ xs)
+        let pathA = evaluate input zs >>= continue xs
         let pathB = evaluate input xs
         pathA <|> pathB
     (Alternative as bs) -> do
@@ -67,3 +67,15 @@ runEvaluator regex input = case parseRegex regex of
         let pathB = Text.uncons input >>= flip evaluate (x:xs) . snd
         pathA <|> pathB
  -}
+
+takeGroups :: Int -> [Text.Text] -> [Evaluated] -> [(Int, Text.Text)]
+takeGroups n ts [] = [(n, Text.concat ts)]
+takeGroups n ts ((Label x) : xs) = if x == n
+    then [(n, Text.concat ts)]
+    else takeGroups n ts xs ++ takeGroups (n + 1) [] xs
+takeGroups n ts ((TextOutput x) : xs) = takeGroups n (x:ts) xs
+
+getGroups :: [Evaluated] -> [(Int, Text.Text)]
+getGroups = zip [0..] . map joinGroup . groupBy sameGroup . takeGroups 0 []
+    where sameGroup a b = fst a == fst b
+          joinGroup = Text.concat . map snd

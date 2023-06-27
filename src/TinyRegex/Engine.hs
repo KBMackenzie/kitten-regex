@@ -9,8 +9,8 @@ import Data.Functor ((<&>))
 
 compileAST :: RegexAST -> State Int [RegexComp]
 compileAST (MatchStar xs) = singleton . ZeroOrMany <$> compileAST xs
-compileAST (MatchPlus xs) = compileAST xs <&> \c -> c ++ [ZeroOrMany c]
 compileAST (MatchQues xs) = singleton . ZeroOrOne <$> compileAST xs
+compileAST (MatchPlus xs) = compileAST xs <&> \c -> c ++ [ZeroOrMany c]
 compileAST (Verbatim x)   = return [Sequence x]
 compileAST AnyChar        = return [(Character . Predicate) (const True)]
 compileAST (CharacterClass f) = return [Character f]
@@ -33,7 +33,7 @@ compileAST (MatchGroup xs) = do
     c <- compileAll xs
     num <- get
     modify succ
-    return $ (GroupStart (num + 1) : c) ++ [GroupEnd (num + 1)]
+    return $ (GroupStart num : c) ++ [GroupEnd num]
 compileAST LineStart = return [Start]
 compileAST LineEnd = return [End]
 
