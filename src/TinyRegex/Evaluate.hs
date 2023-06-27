@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE StrictData #-}
 
 module TinyRegex.Evaluate
 ( regexBuild
