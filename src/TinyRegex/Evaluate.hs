@@ -3,6 +3,7 @@
 
 module TinyRegex.Evaluate
 ( runEvaluator
+, runRegex
 ) where
 
 import TinyRegex.Core
@@ -56,18 +57,23 @@ evaluate input [] = Just ([], input)
 continue :: [RegexComp] -> (Output, Input) -> Evaluator
 continue toks (output, rest) = (output `consMP`) <$> evaluate rest toks
 
+runStart :: [RegexComp] -> Input -> Evaluator
+runStart (x@Start:xs) input = do
+    let pathA = evaluate input xs
+    let pathB = Text.uncons input >>= flip evaluate (x:xs) . snd
+    pathA <|> pathB
+runStart xs input = evaluate input xs
+
 runEvaluator :: Text.Text -> Input -> Maybe (Output, Input)
 runEvaluator regex input = case parseRegex regex of
     (Left x) -> Just ([], x)
-    (Right x) -> evaluate input (compile x)
+    (Right x) -> runStart (compile x) input
 
-{- How to shave off the start of the list:
- -Start -> do
-        let pathA = evaluate input xs
-        let pathB = Text.uncons input >>= flip evaluate (x:xs) . snd
-        pathA <|> pathB
- -}
+runRegex :: Text.Text -> Input -> Maybe [(Int, Text.Text)]
+runRegex regex input = runEvaluator regex input <&> getGroups . fst
 
+{- Groups -}
+---------------------------------------------------------------------
 takeGroups :: Int -> [Text.Text] -> [Evaluated] -> [(Int, Text.Text)]
 takeGroups n ts [] = [(n, Text.concat ts)]
 takeGroups n ts ((Label x) : xs) = if x == n
