@@ -27,19 +27,20 @@ compileAST (CountRange a b xs) = case (a, b) of
     (Nothing, Nothing)     -> return []
 
 compileAST (AlternativeGroup as bs) = singleton <$>
-    (Alternative <$> compileAll as <*> compileAll bs)
+    (Alternative <$> compileMany as <*> compileMany bs)
 
 compileAST (MatchGroup xs) = do
-    c <- compileAll xs
+    c <- compileMany xs
     num <- get
     modify succ
     return $ (GroupStart num : c) ++ [GroupEnd num]
-compileAST LineStart = return [Start]
-compileAST LineEnd = return [End]
+compileAST TokenStart = return [Start]
+compileAST TokenEnd = return [End]
 
 
-compileAll :: [RegexAST] -> State Int [RegexComp]
-compileAll xs = do
+{- Compile all. -}
+compileMany :: [RegexAST] -> State Int [RegexComp]
+compileMany xs = do
     xs' <- mapM compileAST xs
     return (concat xs')
 
@@ -47,4 +48,4 @@ runCompile :: State Int a -> a
 runCompile st = evalState st 1 -- Subgroups start indexing at '1'!
 
 compile :: [RegexAST] -> [RegexComp]
-compile xs = runCompile (compileAll xs)
+compile xs = runCompile (compileMany xs)

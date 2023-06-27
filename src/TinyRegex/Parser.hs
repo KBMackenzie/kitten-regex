@@ -149,11 +149,10 @@ parseGroup = MatchGroup <$> parens parseTokens
 
 
 {- Combining everything: -}
-
 parseTerm :: Parser RegexAST
 parseTerm = Mega.choice
-    [ LineStart <$ MChar.char '^'
-    , LineEnd   <$ MChar.char '$'
+    [ TokenStart <$ MChar.char '^'
+    , TokenEnd   <$ MChar.char '$'
     , parseGroup
     , parseCharClass
     , parseSpecial'

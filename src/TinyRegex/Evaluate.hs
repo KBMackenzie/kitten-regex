@@ -2,8 +2,10 @@
 {-# LANGUAGE TupleSections #-}
 
 module TinyRegex.Evaluate
-( runEvaluator
-, runRegex
+( regexBuild
+, regexMatch
+, regexMatchT
+, runStart
 ) where
 
 import TinyRegex.Core
@@ -12,7 +14,6 @@ import Control.Applicative ((<|>), empty)
 import Data.Functor ((<&>))
 import TinyRegex.Parser (parseRegex)
 import TinyRegex.Engine (compile)
-import Data.Either (fromRight)
 import Data.List (singleton, groupBy, nub)
 import Data.Bifunctor (first)
 
@@ -68,15 +69,30 @@ runStart (x@Start:xs) input = do
     pathA <|> pathB
 runStart xs input = evaluate input xs
 
-runEvaluator :: Text.Text -> Input -> Either Text.Text (Output, Input)
-runEvaluator regex input = case parseRegex regex of
-    (Left x) -> Left x
-    (Right x) -> case runStart (compile x) input of
-        (Just y) -> Right y
-        Nothing -> (Left . Text.concat) [ "No match. | Regex: ", regex, " | Input: ", input ]
+{- Building -}
+---------------------------------------------------------------------
+regexBuild :: Text.Text -> Either Text.Text Regex
+regexBuild = fmap (Regex . compile) . parseRegex
 
-runRegex :: Text.Text -> Input -> Either Text.Text [(Int, Text.Text)]
-runRegex regex input = runEvaluator regex input <&> getGroups . fst
+{- Evaluator -}
+---------------------------------------------------------------------
+regexMatch :: Regex -> Input -> Maybe RegexOutput
+regexMatch (Regex re) input = runStart re input <&> makeOutput
+
+-- todo: add:
+-- regex split, regex replace
+
+-- Abstractions over types of input:
+regexMatchT :: Text.Text -> Input -> Either Text.Text RegexOutput
+regexMatchT regex input = regexBuild regex >>= \x -> case regexMatch x input of
+    Nothing -> (Left . Text.concat) [ "No match. | Regex: ", regex, " | Input: ", input ]
+    (Just output) -> return output
+
+--runRegex :: Regex -> Input -> Either Text.Text [(Int, Text.Text)]
+--runRegex regex input = runSingleRe regex input <&> getGroups . fst
+
+--runRegexC :: Regex -> Input -> Either Text.Text [(Int, Text.Text)]
+--runRegexC (Regex re) input = runStart re input <&> getGroups . fst
 
 {- Groups -}
 ---------------------------------------------------------------------
@@ -92,3 +108,6 @@ getGroups :: [Evaluated] -> [(Int, Text.Text)]
 getGroups = zip [0..] . reverse . map joinGroup . nub . groupBy sameGroup . takeGroups 0 []
     where sameGroup a b = fst a == fst b
           joinGroup = Text.concat . map snd
+
+makeOutput :: (Output, Input) -> RegexOutput
+makeOutput (xs, rest) = RegexOutput { groups = getGroups xs, leftovers = rest }

@@ -1,18 +1,23 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module TinyRegex.Core
-( Predicate(..)
-, RegexAST(..)
-, RegexComp(..)
+( RegexAST(..)
+, Regex(..)
 , RegexOutput(..)
-, RegexEngine
+, RegexComp(..)
+, Predicate(..)
 ) where
 
 import qualified Data.Text as Text
-import Control.Applicative (Alternative, empty, (<|>))
 
 newtype Predicate = Predicate { getPredicate :: Char -> Bool }
 instance Show Predicate where show _ = "<predicate>"
+newtype Regex = Regex [RegexComp]
+
+data RegexOutput = RegexOutput
+    { groups    :: [(Int, Text.Text)]
+    , leftovers :: Text.Text          } 
+    deriving (Show)
 
 data RegexAST =
       Verbatim Text.Text
@@ -25,7 +30,7 @@ data RegexAST =
     | MatchStar RegexAST
     | MatchQues RegexAST
     | MatchPlus RegexAST
-    | LineStart | LineEnd
+    | TokenStart | TokenEnd
     deriving (Show)
 
 data RegexComp =
@@ -36,43 +41,3 @@ data RegexComp =
     | Alternative [RegexComp] [RegexComp]
     | GroupStart Int | GroupEnd Int | Start | End
     deriving (Show)
-
-data RegexOutput =
-      MatchOutput Text.Text
-    | GroupLabel Int Bool
-    deriving (Show)
-
-type RegexEngine = Maybe ([RegexOutput], Text.Text)
-
-
-{- ParserMonad -}
-----------------------------------------------------
-
-data ParserMonad a =
-      Parsing a
-    | Failure 
-    | ParseError Text.Text
-
-instance Functor ParserMonad where
-    fmap _ Failure          = Failure
-    fmap _ (ParseError e)   = ParseError e
-    fmap f (Parsing x)      = Parsing (f x)
-
-instance Applicative ParserMonad where
-    pure = Parsing
-    Failure <*> _ = Failure
-    Parsing f <*> x = f <$> x
-    ParseError e <*> _ = ParseError e
-
-instance Monad ParserMonad where
-    return = pure
-    Parsing x >>= f = f x
-    Failure >>= _ = Failure
-    ParseError e >>= _ = ParseError e
-
-{- I'm unsure if this satisfies the laws of the Alternative typeclass.
- - It looooooooooks like it does? -}
-instance Alternative ParserMonad where
-    empty = Failure
-    Failure <|> x = x
-    x <|> _ = x
