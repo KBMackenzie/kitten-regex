@@ -12,7 +12,7 @@ bug-reports:    https://github.com/KBMackenzie/TinyRegex/issues
 author:         KBMackenzie
 maintainer:     kelly.a.betty@gmail.com
 copyright:      2023 KBMackenzie
-license:        BSD3
+license:        MIT
 license-file:   LICENSE
 build-type:     Simple
 extra-source-files:

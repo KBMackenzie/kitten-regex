@@ -2,6 +2,7 @@
 
 module TinyRegex.Regexable
 ( Regexable(..)
+, ReString(..)
 , getGroup
 ) where
 
@@ -37,26 +38,33 @@ class Regexable a where
     (<.?>) = isMatch
 
 
+{- Text -}
+------------------------------------------------------
+
 -- Regexable instance for Data.Text.
 -- It has more efficient functions than the default.
 instance Regexable Text.Text where
-    buildEither :: Text.Text -> Either Text.Text Regex
     buildEither = regexBuild
-
-    match :: Regex -> Text.Text -> Maybe RegexOutput
     match = regexMatch
 
     -- A more efficient 'isMatch' definition than the
     -- default definition provided in the typeclass.
-    isMatch :: Regex -> Text.Text -> Bool
     isMatch (Regex re) = isJust . runStart re
 
 
+
+{- String -}
+------------------------------------------------------
+
+-- A small string wrapper so that I can define an instance of Regexable
+-- for strings at all, since that's sadly a limitation.
+newtype ReString = ReString { unReString :: String } deriving (Eq, Ord, Show)
+
 -- Regexable instance for String/[Char].
 -- It just packs the string, that's all.
-instance Regexable String where
-    buildEither = buildEither . Text.pack
-    match regex input  = match regex (Text.pack input)
+instance Regexable ReString where
+    buildEither = buildEither . Text.pack . unReString
+    match regex = match regex . Text.pack . unReString
 
 
 {- Helper functions: -}
