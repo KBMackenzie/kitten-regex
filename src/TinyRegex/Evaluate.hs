@@ -19,7 +19,11 @@ import Data.Bifunctor (first)
 type Input = Text.Text
 type Output = [Evaluated]
 type Evaluator = Maybe (Output, Input)
-data Evaluated = TextOutput Text.Text | Label Int deriving (Show)
+data Evaluated =
+      TextOutput Text.Text
+    | LabelStart Int
+    | LabelEnd Int
+    deriving (Show)
 
 evalPack :: Text.Text -> [Evaluated]
 evalPack =  singleton . TextOutput
@@ -50,8 +54,8 @@ evaluate input (x:xs) = case x of
         runPath as <|> runPath bs
     Start -> evaluate input xs
     End -> if Text.null input then Just ([], Text.empty) else Nothing
-    (GroupStart n) -> first ([Label n] ++) <$> evaluate input xs
-    (GroupEnd n)   -> first ([Label n] ++) <$> evaluate input xs
+    (GroupStart n) -> first ([LabelStart n] ++) <$> evaluate input xs
+    (GroupEnd n)   -> first ([LabelEnd   n] ++) <$> evaluate input xs
 evaluate input [] = Just ([], input)
 
 continue :: [RegexComp] -> (Output, Input) -> Evaluator
@@ -78,12 +82,13 @@ runRegex regex input = runEvaluator regex input <&> getGroups . fst
 ---------------------------------------------------------------------
 takeGroups :: Int -> [Text.Text] -> [Evaluated] -> [(Int, Text.Text)]
 takeGroups n ts [] = [(n, (Text.concat . reverse) ts)]
-takeGroups n ts ((Label x) : xs) = if x == n
+takeGroups n ts ((LabelStart x) : xs) = takeGroups x [] xs ++ takeGroups n ts xs
+takeGroups n ts ((LabelEnd   x) : xs) = if x == n
     then [(n, (Text.concat . reverse) ts)]
-    else takeGroups n ts xs ++ takeGroups (n + 1) [] xs
+    else takeGroups n ts xs
 takeGroups n ts ((TextOutput x) : xs) = takeGroups n (x:ts) xs
 
 getGroups :: [Evaluated] -> [(Int, Text.Text)]
-getGroups = zip [0..] . map joinGroup . nub . groupBy sameGroup . takeGroups 0 []
+getGroups = zip [0..] . reverse . map joinGroup . nub . groupBy sameGroup . takeGroups 0 []
     where sameGroup a b = fst a == fst b
           joinGroup = Text.concat . map snd
