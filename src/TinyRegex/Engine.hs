@@ -20,7 +20,7 @@ compileAST (CountRange a b xs)      = case (a, b) of
     (Just start, Just end) -> do
         c <- compileAST xs
         let matchStart = concat (replicate start c)
-        let matchEnd   = concat (replicate end [ZeroOrOne c])
+        let matchEnd   = concat (replicate (abs (end - start)) [ZeroOrOne c])
         return (matchStart ++ matchEnd)
     (Just start, Nothing)  -> concat . replicate start <$> compileAST xs
     (Nothing, Just end)    -> concat . replicate end . singleton . ZeroOrOne <$> compileAST xs
