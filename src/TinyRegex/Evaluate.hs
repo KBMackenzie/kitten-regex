@@ -13,7 +13,7 @@ import Data.Functor ((<&>))
 import TinyRegex.Parser (parseRegex)
 import TinyRegex.Engine (compile)
 import Data.Either (fromRight)
-import Data.List (singleton, groupBy)
+import Data.List (singleton, groupBy, nub)
 import Data.Bifunctor (first)
 
 type Input = Text.Text
@@ -75,13 +75,13 @@ runRegex regex input = runEvaluator regex input <&> getGroups . fst
 {- Groups -}
 ---------------------------------------------------------------------
 takeGroups :: Int -> [Text.Text] -> [Evaluated] -> [(Int, Text.Text)]
-takeGroups n ts [] = [(n, Text.concat ts)]
+takeGroups n ts [] = [(n, (Text.concat . reverse) ts)]
 takeGroups n ts ((Label x) : xs) = if x == n
-    then [(n, Text.concat ts)]
+    then [(n, (Text.concat . reverse) ts)]
     else takeGroups n ts xs ++ takeGroups (n + 1) [] xs
 takeGroups n ts ((TextOutput x) : xs) = takeGroups n (x:ts) xs
 
 getGroups :: [Evaluated] -> [(Int, Text.Text)]
-getGroups = zip [0..] . map joinGroup . groupBy sameGroup . takeGroups 0 []
+getGroups = zip [0..] . map joinGroup . nub . groupBy sameGroup . takeGroups 0 []
     where sameGroup a b = fst a == fst b
           joinGroup = Text.concat . map snd

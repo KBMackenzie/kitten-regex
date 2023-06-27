@@ -44,7 +44,7 @@ compileAll xs = do
     return (concat xs')
 
 runCompile :: State Int a -> a
-runCompile st = evalState st 0
+runCompile st = evalState st 1 -- Subgroups start indexing at '1'!
 
 compile :: [RegexAST] -> [RegexComp]
 compile xs = runCompile (compileAll xs)
