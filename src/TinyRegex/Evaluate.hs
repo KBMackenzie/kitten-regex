@@ -64,12 +64,14 @@ runStart (x@Start:xs) input = do
     pathA <|> pathB
 runStart xs input = evaluate input xs
 
-runEvaluator :: Text.Text -> Input -> Maybe (Output, Input)
+runEvaluator :: Text.Text -> Input -> Either Text.Text (Output, Input)
 runEvaluator regex input = case parseRegex regex of
-    (Left x) -> Just ([], x)
-    (Right x) -> runStart (compile x) input
+    (Left x) -> Left x
+    (Right x) -> case runStart (compile x) input of
+        (Just y) -> Right y
+        Nothing -> (Left . Text.concat) [ "No match. | Regex: ", regex, " | Input: ", input ]
 
-runRegex :: Text.Text -> Input -> Maybe [(Int, Text.Text)]
+runRegex :: Text.Text -> Input -> Either Text.Text [(Int, Text.Text)]
 runRegex regex input = runEvaluator regex input <&> getGroups . fst
 
 {- Groups -}

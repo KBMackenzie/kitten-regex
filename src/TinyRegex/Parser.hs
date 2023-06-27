@@ -93,12 +93,6 @@ escapeChar xs = Mega.choice
 
 {- Parse terms -}
 
-parseLineStart :: Parser RegexAST
-parseLineStart = LineStart <$ MChar.char '^'
-
-parseLineEnd :: Parser RegexAST
-parseLineEnd = LineEnd <$ MChar.char '$'
-
 parseDot :: Parser RegexAST
 parseDot = AnyChar <$ MChar.char '.'
 
@@ -158,12 +152,12 @@ parseGroup = MatchGroup <$> parens parseTokens
 
 parseTerm :: Parser RegexAST
 parseTerm = Mega.choice
-    [ parseLineStart
-    , parseLineEnd
-    , parseCharClass
-    , parseDot
+    [ LineStart <$ MChar.char '^'
+    , LineEnd   <$ MChar.char '$'
     , parseGroup
+    , parseCharClass
     , parseSpecial'
+    , parseDot
     , parseVerbatim
     , parseChar     ]
 
