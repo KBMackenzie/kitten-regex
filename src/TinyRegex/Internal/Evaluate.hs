@@ -45,7 +45,7 @@ evaluate input (x:xs) = case x of
         \(c, rest) -> if getPredicate fn c
             then (labelChar c `consOutput`) <$> evaluate rest xs
             else empty
-    (ZeroOrMany zs) -> do --todo: done: fixed mistake in here
+    (ZeroOrMany zs) -> do
         let pathA = evaluate input zs >>= continue (x:xs)
         let pathB = evaluate input xs
         pathA <|> pathB
