@@ -31,6 +31,7 @@ library
       TinyRegex.Internal.Evaluate
       TinyRegex.Internal.Parser
       TinyRegex.Internal.Regexable
+      TinyRegex.Internal.Weaver
   other-modules:
       Paths_TinyRegex
   hs-source-dirs:

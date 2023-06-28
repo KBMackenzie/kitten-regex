@@ -15,7 +15,7 @@ import Data.String (IsString(..))
 class Regexable a where
     -- Safely compile regex.
     buildEither :: a -> Either Text.Text Regex
-    -- Safely run a match.
+    -- Safely run match.
     match :: Regex -> a -> Maybe RegexOutput
 
     -- A partial function meant to be used only with constant regex strings
@@ -68,3 +68,6 @@ instance IsString ReString where
 -------------------------------------------------
 getGroup :: RegexOutput -> Int -> Maybe Text.Text
 getGroup = flip lookup . groups
+
+buildRe :: String -> Regex
+buildRe = build . ReString
