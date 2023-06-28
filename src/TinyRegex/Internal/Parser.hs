@@ -22,42 +22,16 @@ import Data.Void (Void)
 
 type Parser = Mega.Parsec Void Text.Text
 
-parsePlus :: Parser (RegexAST -> RegexAST)
-parsePlus = ASTMatchPlus <$ MChar.char '+'
-
-parseStar :: Parser (RegexAST -> RegexAST)
-parseStar = ASTMatchStar <$ MChar.char '*'
-
-parseQues :: Parser (RegexAST -> RegexAST)
-parseQues = ASTMatchQues <$ MChar.char '?'
-
+{- Parsing helpers: -}
+-----------------------------------------------------
 braces :: Parser a -> Parser a
 braces = Mega.between (MChar.char '{') (MChar.char '}')
 
-parseCount :: Parser (RegexAST -> RegexAST)
-parseCount = ASTCount <$> braces Lexer.decimal <?> "integer number"
+parens :: Parser a -> Parser a
+parens = Mega.between (MChar.char '(') (MChar.char ')')
 
-parseRange :: Parser (RegexAST -> RegexAST)
-parseRange = braces $ do
-    start <- Mega.optional Lexer.decimal <?> "start of range"
-    (void . MChar.char) ','
-    end   <- Mega.optional Lexer.decimal <?> "end of range"
-    return (ASTCountRange start end)
-
-parseNumRange :: Parser (RegexAST -> RegexAST)
-parseNumRange = Mega.try parseCount <|> parseRange
-
-postfixes :: [Parser (RegexAST -> RegexAST)]
-postfixes = 
-    [ parsePlus
-    , parseStar
-    , parseQues ]
-
---manyPostfixes :: Parser (RegexAST -> RegexAST)
---manyPostfixes = foldl1 (flip (.)) <$> Mega.some parsePostfix
-
-parsePostfix :: Parser (RegexAST -> RegexAST)
-parsePostfix = Mega.choice postfixes
+brackets :: Parser a -> Parser a
+brackets = Mega.between (MChar.char '[') (MChar.char ']')
 
 reserved :: [Char]
 reserved = [ '*', '.', '?', '+', '^', '$', '{', '(', ')', '[', ']', '|', '\\' ]
@@ -67,6 +41,9 @@ operators = [ '*', '?', '+', '{' ]
 
 isOperator :: Parser Bool
 isOperator = True <$ Mega.satisfy (`elem` operators)
+
+isWordChar :: Char -> Bool
+isWordChar x = isAlphaNum x || x == '_'
 
 escapeChar :: [Char] -> Parser Char
 escapeChar xs = Mega.choice
@@ -83,16 +60,55 @@ escapeChar xs = Mega.choice
     , '|'   <$ MChar.string "\\|"
     , '-'   <$ MChar.string "\\-"
     , '\\'  <$ MChar.string "\\\\"
+    , '\"'  <$ MChar.string "\\\""
     , '\n'  <$ MChar.string "\\n"
     , '\b'  <$ MChar.string "\\b"
     , '\t'  <$ MChar.string "\\t"
     , '\f'  <$ MChar.string "\\f"
+    , '\r'  <$ MChar.string "\\r"
     , '{'   <$ (MChar.char '{' >> Mega.notFollowedBy MChar.digitChar)
-    , Mega.satisfy (`notElem` xs) ]
+    , Mega.satisfy (`notElem` xs) ] <?> "valid character"
+
+{- Parsing operators: -}
+-----------------------------------------------------
+parsePlus :: Parser (RegexAST -> RegexAST)
+parsePlus = ASTMatchPlus <$ MChar.char '+'
+
+parseStar :: Parser (RegexAST -> RegexAST)
+parseStar = ASTMatchStar <$ MChar.char '*'
+
+parseQues :: Parser (RegexAST -> RegexAST)
+parseQues = ASTMatchQues <$ MChar.char '?'
+
+parseCount :: Parser (RegexAST -> RegexAST)
+parseCount = ASTCount <$> braces Lexer.decimal <?> "integer number"
+
+postfixes :: [Parser (RegexAST -> RegexAST)]
+postfixes = 
+    [ parsePlus
+    , parseStar
+    , parseQues ]
+
+--manyPostfixes :: Parser (RegexAST -> RegexAST)
+--manyPostfixes = foldl1 (flip (.)) <$> Mega.some parsePostfix
+
+parsePostfix :: Parser (RegexAST -> RegexAST)
+parsePostfix = Mega.choice postfixes
+
+{- Parsing numeric ranges (e.g. a{2, 5}) -}
+parseRange :: Parser (RegexAST -> RegexAST)
+parseRange = braces $ do
+    start <- Mega.optional Lexer.decimal <?> "start of range"
+    (void . MChar.char) ','
+    end   <- Mega.optional Lexer.decimal <?> "end of range"
+    return (ASTCountRange start end)
+
+parseNumRange :: Parser (RegexAST -> RegexAST)
+parseNumRange = Mega.try parseCount <|> parseRange
 
 
-{- Parse terms -}
-
+{- Parsing tokens: -}
+-----------------------------------------------------
 parseDot :: Parser RegexAST
 parseDot = ASTAnyChar <$ MChar.char '.'
 
@@ -116,19 +132,12 @@ parseSpecial' :: Parser RegexAST
 parseSpecial' = ASTCharacterClass . Predicate <$> parseSpecial
 
 {- Parsing character ranges (e.g. [a-Z]) -}
-
 charRange :: Parser (Char -> Bool)
 charRange = do
     a <- escapeChar [ '\\', ']' ]
     (void . MChar.char) '-'
     b <- escapeChar [ '\\', ']' ]
     return (\x -> x `elem` [a..b])
-
-isWordChar :: Char -> Bool
-isWordChar x = isAlphaNum x || x == '_'
-
-brackets :: Parser a -> Parser a
-brackets = Mega.between (MChar.char '[') (MChar.char ']')
 
 parseCharClass :: Parser RegexAST
 parseCharClass = brackets $ do
@@ -140,10 +149,7 @@ parseCharClass = brackets $ do
         char = escapeChar [ '\\', ']' ] <* Mega.notFollowedBy (MChar.char '-')
         charPred = (==) <$> Mega.try char
 
-{- Capture groups -}
-parens :: Parser a -> Parser a
-parens = Mega.between (MChar.char '(') (MChar.char ')')
-
+{- Parsing capture groups (e.g. a(b*)c) -}
 parseGroup :: Parser RegexAST
 parseGroup = ASTMatchGroup <$> parens parseTokens
 

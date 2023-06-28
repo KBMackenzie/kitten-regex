@@ -41,19 +41,17 @@ class Regexable a where
 {- Text -}
 ------------------------------------------------------
 -- Regexable instance for Data.Text.
--- It has more efficient functions than the default.
 instance Regexable Text.Text where
     buildEither = regexBuild
     match = regexMatch
 
-    -- A more efficient 'isMatch' definition than the
-    -- default definition provided in the typeclass.
+    -- A more efficient 'isMatch' definition.
     isMatch (Regex re) = isJust . runStart re
 
 {- String -}
 ------------------------------------------------------
--- A small string wrapper so that I can define an instance of Regexable
--- for strings at all, since that's sadly a limitation.
+-- A small string wrapper so that I can define an instance of Regexable for String,
+-- since String is just an alias for [Char].
 newtype ReString = ReString { unReString :: String } deriving (Eq, Ord, Show)
 
 -- Regexable instance for String/[Char].
@@ -62,8 +60,7 @@ instance Regexable ReString where
     buildEither = buildEither . Text.pack . unReString
     match regex = match regex . Text.pack . unReString
 
--- Instance of 'IsString' so that ReString can be
--- used with the 'OverloadedStrings' extension.
+-- Instance of 'IsString' so that ReString can be used with the 'OverloadedStrings' extension.
 instance IsString ReString where
     fromString = ReString
 
