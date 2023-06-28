@@ -32,7 +32,7 @@ Disclaimer: You *shouldn't* validate emails with regex, this is just a convenien
 
 Additionally, while I wrapped the strings in the example above in the ReString newtype, you don't *have* to. The Regexable typeclass (which handles regex compilation and matching) has instances for Text and ByteString too.
 
-*"Why not have a raw instance for String?"*
+> *"Why not have a raw instance for String?"*
 
 Because String is a type alias for [Char], and [Char] cannot be made an instance of a typeclass without using a language extension and allowing for some possible unpredictability down the road with the compiler, and I didn't think that was worth the trouble.
 
