@@ -73,6 +73,7 @@ The following Regex patterns are supported by this library:
 - Character classes between square brackets. (e.g. `[a-zA-Z0-9]`)
 - Capture groups (e.g. `(ab)c`) and non-capture groups (e.g. `(?:ab)c`)
 - Repetition ranges between curly braces. (e.g. `a{3}`, `b{3, 5}`, `c{3,}`, etc).
+- Alternative branches with '|'. (e.g. `a(b|c)`, `a*b|c+`).
 - The start of line (^) and end of line ($) anchors.
 
 [ To Do: ] 

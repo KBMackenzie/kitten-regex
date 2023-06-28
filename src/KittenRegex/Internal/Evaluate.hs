@@ -102,8 +102,6 @@ regexMatchT regex input = regexBuild regex >>= \x -> case regexMatch x input of
     Nothing -> (Left . Text.concat) [ "No match. | Regex: ", regex, " | Input: ", input ]
     (Just output) -> return output
 
---regexSplit :: Regex -> Input -> Maybe RegexOutput
-
 
 {- Groups -}
 ---------------------------------------------------------------------
