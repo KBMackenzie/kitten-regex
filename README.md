@@ -1,5 +1,7 @@
 A small, minimalistic Haskell Regex library written in pure Haskell. I initially worked on this as a side feature for my esotering programming language [Meowscript](https://github.com/KBMackenzie/Meowscript) and as a learning exercise, but it escalated into something usable!
 
+This library supports a __subset of PCRE__. You can see all the supported patterns [here](#supported-regex-patterns).
+
 This library is primarily based on `Data.Text` instead of Haskell's native String type (due to the inefficiency of Haskell's native String type). It supports regexing with both Text, ByteString *and* String, however. (Though Strings have to be wrapped in a special newtype.)
 
 It supports:
@@ -74,6 +76,7 @@ The following Regex patterns are supported by this library:
 - Capture groups (e.g. `(ab)c`) and non-capture groups (e.g. `(?:ab)c`)
 - Repetition ranges between curly braces. (e.g. `a{3}`, `b{3, 5}`, `c{3,}`, etc).
 - Alternative branches with '|'. (e.g. `a(b|c)`, `a*b|c+`).
+- Generic character types (`\w`, `\s`, `\d`) and their negations (`\W`, `\S`, `\D`)
 - The start of line (^) and end of line ($) anchors.
 
 [ To Do: ] 
