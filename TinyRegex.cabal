@@ -39,6 +39,7 @@ library
   ghc-options: -O3 -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
       base >=4.7 && <5
+    , bytestring
     , megaparsec
     , mtl
     , text
@@ -55,6 +56,7 @@ executable TinyRegex-exe
   build-depends:
       TinyRegex
     , base >=4.7 && <5
+    , bytestring
     , megaparsec
     , mtl
     , text
@@ -72,6 +74,7 @@ test-suite TinyRegex-test
   build-depends:
       TinyRegex
     , base >=4.7 && <5
+    , bytestring
     , megaparsec
     , mtl
     , text

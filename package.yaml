@@ -25,6 +25,7 @@ dependencies:
 - megaparsec
 - transformers
 - mtl
+- bytestring
 
 ghc-options:
 - -O3

@@ -59,7 +59,7 @@ evaluate input (x:xs) = case x of
         let runPath ts = evaluate input (ts ++ xs)
         runPath as <|> runPath bs
     Start -> evaluate input xs
-    End -> if Text.null input then Just ([], Text.empty) else Nothing
+    End -> ([],) <$> isEOL input
     (GroupStart n) -> first ([LabelStart n] ++) <$> evaluate input xs
     (GroupEnd n)   -> first ([LabelEnd   n] ++) <$> evaluate input xs
 evaluate input [] = Just ([], input)
@@ -81,6 +81,11 @@ runStart' xs n input = do
     let pathB = Text.uncons input >>= runStart' xs (succ n) . snd
     pathA <|> pathB
 
+isEOL :: Input -> Maybe Text.Text
+isEOL input = if Text.null input
+    then Just input
+    else Text.stripPrefix "\n" input <|> Text.stripPrefix "\r\n" input
+
 {- Building -}
 ---------------------------------------------------------------------
 regexBuild :: Text.Text -> Either Text.Text Regex
@@ -88,11 +93,11 @@ regexBuild = fmap (Regex . compile) . parseRegex
 
 {- Evaluator -}
 ---------------------------------------------------------------------
-regexMatch :: Regex -> Input -> Maybe RegexOutput
+regexMatch :: Regex -> Input -> Maybe (RegexOutput Text.Text)
 regexMatch (Regex re) input = runStart re input <&> makeOutput
 
 -- Abstractions over types of input:
-regexMatchT :: Text.Text -> Input -> Either Text.Text RegexOutput
+regexMatchT :: Text.Text -> Input -> Either Text.Text (RegexOutput Text.Text)
 regexMatchT regex input = regexBuild regex >>= \x -> case regexMatch x input of
     Nothing -> (Left . Text.concat) [ "No match. | Regex: ", regex, " | Input: ", input ]
     (Just output) -> return output
@@ -115,7 +120,7 @@ getGroups = zip [0..] . reverse . map joinGroup . nub . groupBy sameGroup . sepG
     where sameGroup a b = fst a == fst b
           joinGroup = Text.concat . map snd
 
-makeOutput :: (Output, Input) -> RegexOutput
+makeOutput :: (Output, Input) -> RegexOutput Text.Text
 makeOutput (xs, rest) = RegexOutput { groups = getGroups xs, leftovers = rest }
 
 
@@ -124,11 +129,14 @@ makeOutput (xs, rest) = RegexOutput { groups = getGroups xs, leftovers = rest }
 regexSplit :: Regex -> Input -> Maybe [Text.Text]
 regexSplit re@(Regex regex) input = do
     (n, xs) <- second makeOutput <$> runStart' regex 0 input 
-    middle <- getGroup xs 0
     let start = Text.take n input
     let end = leftovers xs
-    let output = [start, middle]
-    Just output <> (regexSplit re end <|> Just [end])
+    Just [start] <> (regexSplit re end <|> Just [end])
 
 regexReplace :: Regex -> Input -> Text.Text -> Maybe Text.Text
-regexReplace re input replacement = Text.intercalate replacement <$> regexSplit re input
+regexReplace re@(Regex regex) input replacement = do
+    (n, xs) <- second makeOutput <$> runStart' regex 0 input
+    let start = Text.take n input
+    let end = leftovers xs
+    let str = start `Text.append` replacement
+    Just str <> (regexReplace re end replacement <|> Just end)

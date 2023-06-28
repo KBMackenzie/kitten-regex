@@ -11,6 +11,7 @@ module TinyRegex.Internal.Core
 ) where
 
 import qualified Data.Text as Text
+import Data.Bifunctor (second)
 
 newtype Predicate = Predicate { getPredicate :: Char -> Bool }
 instance Show Predicate where show _ = "<predicate>"
@@ -18,12 +19,15 @@ instance Show Predicate where show _ = "<predicate>"
 -- A compiled regex newtype, meant to be used as an opaque type.
 newtype Regex = Regex [RegexComp]
 
-data RegexOutput = RegexOutput
-    { groups    :: [(Int, Text.Text)]
-    , leftovers :: Text.Text          } 
+data RegexOutput a = RegexOutput
+    { groups    :: [(Int, a)]
+    , leftovers :: a        }
     deriving (Eq, Show)
 
-getGroup :: RegexOutput -> Int -> Maybe Text.Text
+instance Functor RegexOutput where
+    fmap f (RegexOutput xs l) = RegexOutput (second f <$> xs) (f l)
+
+getGroup :: RegexOutput a -> Int -> Maybe a
 getGroup = flip lookup . groups
 
 data RegexAST =
