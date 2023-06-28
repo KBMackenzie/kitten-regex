@@ -32,11 +32,13 @@ Disclaimer: You *shouldn't* validate emails with regex, this is just a convenien
 
 Additionally, while I wrapped the strings in the example above in the ReString newtype, you don't *have* to. The Regexable typeclass (which handles regex compilation and matching) has instances for Text and ByteString too.
 
+I heavily encourage you to use Text for everything Regex-related, in fact! The inner workings of the Regex engine use Text already; every other string type is just converted to Text behind the scenes.
+
 > *"Why not have a raw instance for String?"*
 
 Because String is a type alias for [Char], and [Char] cannot be made an instance of a typeclass without using the FlexibleInstances language extension and allowing for some possible unpredictability down the road with the compiler, and I didn't think that was worth the trouble.
 
-The ReString newtype is an instance of IsString, too, so the OverloadedStrings extension should work fine with it, in case you *really* want to work with Haskell's native String type.
+The ReString newtype is an instance of IsString, too, so the OverloadedStrings extension should work fine with it, in case you want to/have to work with Haskell's native String type.
 
 ## Dynamically Building Regexes
 An example of how to dynamically build that same email validation regex above with combinators:
