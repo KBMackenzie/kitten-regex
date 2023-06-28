@@ -8,7 +8,8 @@ It supports:
 3. Regex 'split' and 'replace' functions for strings
 4. A way to dynamically build a regex with combinator functions
 
-An example of it in action, with a neat regex string for emails taken from [this website](https://regexr.com/3e48o):
+## Regex Matching
+An example of it in action, with a neat regex string for email validation taken from [this website](https://regexr.com/3e48o):
 
 ```haskell
 emailRegex :: Regex
@@ -27,7 +28,19 @@ examples = do
     -- Just (RegexOutput {groups = [(0,"test@gmail.com"),(1,"gmail.")], leftovers = ""})
 ```
 
-And an example of how to dynamically build that same regex above with combinators:
+Disclaimer: You *shouldn't* validate emails with regex, this is just a convenient example!
+
+Additionally, while I wrapped the strings in the example above in the ReString newtype, you don't *have* to. The Regexable typeclass (which handles regex compilation and matching) has instances for Text and ByteString too.
+
+*"Why not have a raw instance for String?"*
+
+Because String is a type alias for [Char], and [Char] cannot be made an instance of a typeclass without using a language extension and allowing for some possible unpredictability down the road with the compiler, and I didn't think that was worth the trouble.
+
+The ReString newtype is an instance of IsString, too, so the OverloadedStrings extension should work fine with it, in case you *really* want to work with Haskell's native String type.
+
+## Dynamically Building Regexes
+An example of how to dynamically build that same email validation regex above with combinators:
+
 ```haskell
 emailRegex' :: Regex
 emailRegex' = toRegex $
