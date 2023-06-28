@@ -40,6 +40,7 @@ Because String is a type alias for [Char], and [Char] cannot be made an instance
 
 The ReString newtype is an instance of IsString, too, so the OverloadedStrings extension should work fine with it, in case you want to/have to work with Haskell's native String type.
 
+
 ## Dynamically Building Regexes
 An example of how to dynamically build that same email validation regex above with combinators:
 
@@ -62,6 +63,17 @@ examples' = do
     print inspect -- It prints the exact same output as before:
     -- Just (RegexOutput {groups = [(0,"test@gmail.com"),(1,"gmail.")], leftovers = ""})
 ```
+
+## Supported Regex Patterns
+This library supports a subset of PCRE.
+The following Regex patterns are supported by this library:
+
+- Escape sequences with a backslash (\\).
+- The star (\*), plus (\+) and question mark (?) operators.
+- Character classes between square brackets. (e.g. `[a-zA-Z0-9]`)
+- Capture groups (e.g. `(ab)c`) and non-capture groups (e.g. `(?:ab)c`)
+- Repetition ranges between curly braces. (e.g. `a{3}`, `b{3, 5}`, `c{3,}`, etc).
+- The start of line (^) and end of line ($) anchors.
 
 [ To Do: ] 
 1. Make a better README.

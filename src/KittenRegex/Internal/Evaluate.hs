@@ -84,7 +84,7 @@ runStart' xs n input = do
 isEOL :: Input -> Maybe Text.Text
 isEOL input = if Text.null input
     then Just input
-    else Text.stripPrefix "\n" input <|> Text.stripPrefix "\r\n" input
+    else Text.stripPrefix "\n" input <|> Text.stripPrefix "\r\n" input <|> Text.stripPrefix "\r" input
 
 {- Building -}
 ---------------------------------------------------------------------
