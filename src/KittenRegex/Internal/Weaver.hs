@@ -66,8 +66,8 @@ asList = toList . single
 {- Builders: -}
 ----------------------------------------------------------
 -- Aliases that make building regexes far more intuitive: 
-string :: Text.Text -> RegexAST
-string = ASTVerbatim
+string :: String -> RegexAST
+string = ASTVerbatim . Text.pack
 
 char :: Char -> RegexAST
 char = ASTVerbatim . Text.singleton
