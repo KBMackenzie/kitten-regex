@@ -7,6 +7,7 @@ module TinyRegex.Internal.Core
 , RegexOutput(..)
 , RegexComp(..)
 , Predicate(..)
+, getGroup
 ) where
 
 import qualified Data.Text as Text
@@ -21,6 +22,9 @@ data RegexOutput = RegexOutput
     { groups    :: [(Int, Text.Text)]
     , leftovers :: Text.Text          } 
     deriving (Eq, Show)
+
+getGroup :: RegexOutput -> Int -> Maybe Text.Text
+getGroup = flip lookup . groups
 
 data RegexAST =
       ASTVerbatim Text.Text

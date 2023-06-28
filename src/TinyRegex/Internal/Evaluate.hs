@@ -7,6 +7,8 @@ module TinyRegex.Internal.Evaluate
 , regexMatch
 , regexMatchT
 , runStart
+, regexSplit
+, regexReplace
 ) where
 
 import TinyRegex.Internal.Core
@@ -16,7 +18,7 @@ import Data.Functor ((<&>))
 import TinyRegex.Internal.Parser (parseRegex)
 import TinyRegex.Internal.Compile (compile)
 import Data.List (singleton, groupBy, nub)
-import Data.Bifunctor (first)
+import Data.Bifunctor (first, second)
 
 type Input = Text.Text
 type Output = [Labels]
@@ -119,4 +121,14 @@ makeOutput (xs, rest) = RegexOutput { groups = getGroups xs, leftovers = rest }
 
 {- Splitting + Replacing -}
 ---------------------------------------------------------------------
---regexBite :: Regex -> Input -> 
+regexSplit :: Regex -> Input -> Maybe [Text.Text]
+regexSplit re@(Regex regex) input = do
+    (n, xs) <- second makeOutput <$> runStart' regex 0 input 
+    middle <- getGroup xs 0
+    let start = Text.take n input
+    let end = leftovers xs
+    let output = [start, middle]
+    Just output <> (regexSplit re end <|> Just [end])
+
+regexReplace :: Regex -> Input -> Text.Text -> Maybe Text.Text
+regexReplace re input replacement = Text.intercalate replacement <$> regexSplit re input

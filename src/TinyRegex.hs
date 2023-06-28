@@ -6,5 +6,5 @@ module TinyRegex
 , getGroup
 ) where
 
-import TinyRegex.Internal.Core (Regex, RegexOutput(..))
-import TinyRegex.Internal.Regexable (Regexable(..), ReString(..), getGroup)
+import TinyRegex.Internal.Core (Regex, RegexOutput(..), getGroup)
+import TinyRegex.Internal.Regexable (Regexable(..), ReString(..))
