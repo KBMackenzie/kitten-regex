@@ -26,6 +26,7 @@ source-repository head
 library
   exposed-modules:
       KittenRegex
+      KittenRegex.Builder
       KittenRegex.Internal.Compile
       KittenRegex.Internal.Core
       KittenRegex.Internal.Evaluate

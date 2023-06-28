@@ -1,0 +1,25 @@
+module KittenRegex.Builder
+( RegexBuilder(..)
+, string
+, char
+, charWhere
+, digit
+, space
+, letter
+, wordChar
+, anyChar
+, anyAmountOf
+, optional
+, oneOrMore
+, amountOf
+, amountBetween
+, minimumOf
+, maximumOf
+, capture
+, (<.|>)
+, toRegex
+, startOfLine
+, endOfLine
+) where
+
+import KittenRegex.Internal.Weaver

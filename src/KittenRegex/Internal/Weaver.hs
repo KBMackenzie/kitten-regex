@@ -2,8 +2,26 @@
 
 module KittenRegex.Internal.Weaver
 ( RegexBuilder(..)
-, RegexAST(..)
-, example
+, string
+, char
+, charWhere
+, digit
+, space
+, letter
+, wordChar
+, anyChar
+, anyAmountOf
+, optional
+, oneOrMore
+, amountOf
+, amountBetween
+, minimumOf
+, maximumOf
+, capture
+, (<.|>)
+, toRegex
+, startOfLine
+, endOfLine
 ) where
 
 import KittenRegex.Internal.Core (Regex(..), RegexAST(..), Predicate(..))
@@ -39,14 +57,11 @@ toList :: RegexList -> [RegexAST]
 toList (RegexNode r next) = r : toList next
 toList RegexEnd           = []
 
-toRegex :: RegexList -> Regex
-toRegex = Regex . compile . toList
+toRegex :: (RegexBuilder a) => a -> Regex
+toRegex = Regex . compile . asList
 
 asList :: (RegexBuilder a) => a -> [RegexAST]
 asList = toList . single
-
-example :: RegexList
-example = ASTVerbatim "c" <.|> ASTVerbatim "d" <.+> ASTVerbatim "a" <.+> ASTVerbatim "b"
 
 {- Builders: -}
 ----------------------------------------------------------
@@ -113,3 +128,10 @@ capture = ASTCaptureGroup . asList
 -- It accepts both a single expression and a whole list.
 (<.|>) :: (RegexBuilder a, RegexBuilder b) => a -> b -> RegexAST
 (<.|>) a b = ASTAlternative (asList a) (asList b)
+
+{- Special combinators: -}
+startOfLine :: RegexAST
+startOfLine = ASTTokenStart
+
+endOfLine :: RegexAST
+endOfLine = ASTTokenEnd
