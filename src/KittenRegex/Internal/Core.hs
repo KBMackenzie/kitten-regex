@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE StrictData #-}
 
-module TinyRegex.Internal.Core
+module KittenRegex.Internal.Core
 ( RegexAST(..)
 , Regex(..)
 , RegexOutput(..)

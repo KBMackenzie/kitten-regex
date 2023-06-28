@@ -2,7 +2,7 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE StrictData #-}
 
-module TinyRegex.Internal.Evaluate
+module KittenRegex.Internal.Evaluate
 ( regexBuild
 , regexMatch
 , regexMatchT
@@ -11,12 +11,12 @@ module TinyRegex.Internal.Evaluate
 , regexReplace
 ) where
 
-import TinyRegex.Internal.Core
+import KittenRegex.Internal.Core
 import qualified Data.Text as Text
 import Control.Applicative ((<|>), empty)
 import Data.Functor ((<&>))
-import TinyRegex.Internal.Parser (parseRegex)
-import TinyRegex.Internal.Compile (compile)
+import KittenRegex.Internal.Parser (parseRegex)
+import KittenRegex.Internal.Compile (compile)
 import Data.List (singleton, groupBy, nub)
 import Data.Bifunctor (first, second)
 

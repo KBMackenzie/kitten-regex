@@ -1,4 +1,4 @@
-import TinyRegex
+import KittenRegex
 
 reTest :: IO ()
 reTest = do

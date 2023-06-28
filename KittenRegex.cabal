@@ -4,11 +4,11 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 
-name:           TinyRegex
+name:           KittenRegex
 version:        0.1.0.0
-description:    Please see the README on GitHub at <https://github.com/githubuser/TinyRegex#readme>
-homepage:       https://github.com/KBMackenzie/TinyRegex#readme
-bug-reports:    https://github.com/KBMackenzie/TinyRegex/issues
+description:    Please see the README on GitHub at <https://github.com/KBMackenzie/kitten-regex#readme>
+homepage:       https://github.com/KBMackenzie/kitten-regex#readme
+bug-reports:    https://github.com/KBMackenzie/kitten-regex/issues
 author:         KBMackenzie
 maintainer:     kelly.a.betty@gmail.com
 copyright:      2023 KBMackenzie
@@ -21,19 +21,19 @@ extra-source-files:
 
 source-repository head
   type: git
-  location: https://github.com/KBMackenzie/TinyRegex
+  location: https://github.com/KBMackenzie/kitten-regex
 
 library
   exposed-modules:
-      TinyRegex
-      TinyRegex.Internal.Compile
-      TinyRegex.Internal.Core
-      TinyRegex.Internal.Evaluate
-      TinyRegex.Internal.Parser
-      TinyRegex.Internal.Regexable
-      TinyRegex.Internal.Weaver
+      KittenRegex
+      KittenRegex.Internal.Compile
+      KittenRegex.Internal.Core
+      KittenRegex.Internal.Evaluate
+      KittenRegex.Internal.Parser
+      KittenRegex.Internal.Regexable
+      KittenRegex.Internal.Weaver
   other-modules:
-      Paths_TinyRegex
+      Paths_KittenRegex
   hs-source-dirs:
       src
   ghc-options: -O3 -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
@@ -46,15 +46,15 @@ library
     , transformers
   default-language: Haskell2010
 
-executable TinyRegex-exe
+executable KittenRegex-exe
   main-is: Main.hs
   other-modules:
-      Paths_TinyRegex
+      Paths_KittenRegex
   hs-source-dirs:
       app
   ghc-options: -O3 -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-M128m
   build-depends:
-      TinyRegex
+      KittenRegex
     , base >=4.7 && <5
     , bytestring
     , megaparsec
@@ -63,16 +63,16 @@ executable TinyRegex-exe
     , transformers
   default-language: Haskell2010
 
-test-suite TinyRegex-test
+test-suite KittenRegex-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      Paths_TinyRegex
+      Paths_KittenRegex
   hs-source-dirs:
       test
   ghc-options: -O3 -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-M128m
   build-depends:
-      TinyRegex
+      KittenRegex
     , base >=4.7 && <5
     , bytestring
     , megaparsec

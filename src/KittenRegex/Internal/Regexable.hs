@@ -1,14 +1,14 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module TinyRegex.Internal.Regexable
+module KittenRegex.Internal.Regexable
 ( Regexable(..)
 , ReString(..)
 , buildRe
 , unReStringAll
 ) where
 
-import TinyRegex.Internal.Core
-import TinyRegex.Internal.Evaluate 
+import KittenRegex.Internal.Core
+import KittenRegex.Internal.Evaluate 
 import qualified Data.Text as Text
 import Data.String (IsString(..))
 import qualified Data.Text.Encoding as TextEnc

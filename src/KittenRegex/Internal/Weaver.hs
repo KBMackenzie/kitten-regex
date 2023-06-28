@@ -1,15 +1,15 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module TinyRegex.Internal.Weaver
+module KittenRegex.Internal.Weaver
 ( RegexBuilder(..)
 , RegexAST(..)
 , example
 ) where
 
-import TinyRegex.Internal.Core (Regex(..), RegexAST(..), Predicate(..))
-import TinyRegex.Internal.Compile (compile)
-import TinyRegex.Internal.Regexable (Regexable(..))
-import TinyRegex.Internal.Parser (isWordChar)
+import KittenRegex.Internal.Core (Regex(..), RegexAST(..), Predicate(..))
+import KittenRegex.Internal.Compile (compile)
+import KittenRegex.Internal.Regexable (Regexable(..))
+import KittenRegex.Internal.Parser (isWordChar)
 import qualified Data.Text as Text
 import Data.Char (isDigit, isSpace, isLetter)
 
