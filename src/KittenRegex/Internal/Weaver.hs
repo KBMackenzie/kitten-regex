@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module KittenRegex.Internal.Weaver
 ( RegexBuilder(..)
 , string
@@ -26,7 +24,6 @@ module KittenRegex.Internal.Weaver
 
 import KittenRegex.Internal.Core (Regex(..), RegexAST(..), Predicate(..))
 import KittenRegex.Internal.Compile (compile)
-import KittenRegex.Internal.Regexable (Regexable(..))
 import KittenRegex.Internal.Parser (isWordChar)
 import qualified Data.Text as Text
 import Data.Char (isDigit, isSpace, isLetter)
