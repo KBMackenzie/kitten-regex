@@ -37,12 +37,13 @@ compileAST (ASTCountRange a b xs) = case (a, b) of
     (Just start, Nothing)  -> concat . replicate start <$> compileAST xs
     (Nothing, Just end)    -> concat . replicate end . singleton . ZeroOrOne <$> compileAST xs
     (Nothing, Nothing)     -> return []
-compileAST (ASTAlternativeGroup as bs) = singleton <$>
+compileAST (ASTAlternative as bs) = singleton <$>
     (Alternative <$> compileMany as <*> compileMany bs)
-compileAST (ASTMatchGroup xs) = do
+compileAST (ASTCaptureGroup xs) = do
     c <- compileMany xs
     num <- get
     modify succ
     return $ (GroupStart num : c) ++ [GroupEnd num]
+compileAST (ASTNonCaptureGroup xs) = compileMany xs
 compileAST ASTTokenStart = return [Start]
 compileAST ASTTokenEnd = return [End]

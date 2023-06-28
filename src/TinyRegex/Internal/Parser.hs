@@ -151,7 +151,13 @@ parseCharClass = brackets $ do
 
 {- Parsing capture groups (e.g. a(b*)c) -}
 parseGroup :: Parser RegexAST
-parseGroup = ASTMatchGroup <$> parens parseTokens
+parseGroup = Mega.try nonCaptureGroup <|> captureGroup
+
+captureGroup :: Parser RegexAST
+captureGroup = ASTCaptureGroup <$> parens parseTokens
+
+nonCaptureGroup :: Parser RegexAST
+nonCaptureGroup = ASTNonCaptureGroup <$> parens (MChar.string "?:" >> parseTokens)
 
 parseStart :: Parser RegexAST
 parseStart = ASTTokenStart <$ MChar.char '^'
@@ -179,7 +185,7 @@ parseToken = do
     (return . p2 . p1) term
 
 parseAlt :: Parser ([RegexAST] -> RegexAST)
-parseAlt = flip ASTAlternativeGroup <$> (MChar.char '|' >> parseTokens)
+parseAlt = flip ASTAlternative <$> (MChar.char '|' >> parseTokens)
 
 parseTokens :: Parser [RegexAST]
 parseTokens = do

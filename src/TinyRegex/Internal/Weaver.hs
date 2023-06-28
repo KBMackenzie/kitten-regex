@@ -8,9 +8,10 @@ module TinyRegex.Internal.Weaver
 
 import TinyRegex.Internal.Core (Regex(..), RegexAST(..), Predicate(..))
 import TinyRegex.Internal.Compile (compile)
-import TinyRegex.Internal.Regexable(Regexable(..))
+import TinyRegex.Internal.Regexable (Regexable(..))
+import TinyRegex.Internal.Parser (isWordChar)
 import qualified Data.Text as Text
-import Data.Bifunctor (bimap)
+import Data.Char (isDigit, isSpace, isLetter)
 
 data RegexList =
       RegexNode RegexAST RegexList
@@ -45,20 +46,11 @@ asList :: (RegexBuilder a) => a -> [RegexAST]
 asList = toList . single
 
 example :: RegexList
-example = ASTVerbatim "c" <.+> ASTVerbatim "a" <.+> ASTVerbatim "b"
+example = ASTVerbatim "c" <.|> ASTVerbatim "d" <.+> ASTVerbatim "a" <.+> ASTVerbatim "b"
 
 {- Builders: -}
 ----------------------------------------------------------
 -- Aliases that make building regexes far more intuitive: 
-anyAmountOf :: RegexAST -> RegexAST
-anyAmountOf = ASTMatchStar
-
-optional :: RegexAST -> RegexAST
-optional = ASTMatchQues
-
-oneOrMore :: RegexAST -> RegexAST
-oneOrMore = ASTMatchPlus
-
 string :: Text.Text -> RegexAST
 string = ASTVerbatim
 
@@ -68,15 +60,56 @@ char = ASTVerbatim . Text.singleton
 charWhere :: (Char -> Bool) -> RegexAST
 charWhere = ASTCharacterClass . Predicate
 
+digit :: RegexAST
+digit = charWhere isDigit
+
+space :: RegexAST
+space = charWhere isSpace
+
+letter :: RegexAST
+letter = charWhere isLetter
+
+wordChar :: RegexAST
+wordChar = charWhere isWordChar
+
 anyChar :: RegexAST
 anyChar = ASTAnyChar
 
--- Polymorphic group-maker function.
--- It accepts both a single expression and a whole list.
-groupWhere :: (RegexBuilder a) => a -> RegexAST
-groupWhere = ASTMatchGroup . asList
+{- Modifiers -}
+---------------------------------------------------------------------------------------
+-- They're polymorphic and wrapped in non-capture groups to make them easier to combine.
+-- This has a compile-time cost, but after compilation there are no real differences.
 
--- Polymorphic alternative function.
+groupUp :: (RegexBuilder a) => a -> RegexAST
+groupUp = ASTNonCaptureGroup . asList
+
+anyAmountOf :: (RegexBuilder a) => a -> RegexAST
+anyAmountOf = ASTMatchStar . groupUp
+
+optional :: (RegexBuilder a) => a -> RegexAST
+optional = ASTMatchQues . groupUp
+
+oneOrMore :: (RegexBuilder a) => a -> RegexAST
+oneOrMore = ASTMatchPlus . groupUp
+
+amountOf :: (RegexBuilder a) => Int -> a -> RegexAST
+amountOf n = ASTCount n . groupUp
+
+amountBetween :: Int -> Int -> RegexAST -> RegexAST
+amountBetween a b = ASTCountRange (Just a) (Just b) . groupUp
+
+minimumOf :: Int -> RegexAST -> RegexAST
+minimumOf a = ASTCountRange (Just a) Nothing . groupUp
+
+maximumOf :: Int -> RegexAST -> RegexAST
+maximumOf b = ASTCountRange Nothing (Just b) . groupUp
+
+-- Polymorphic capture group function.
 -- It accepts both a single expression and a whole list.
-alternative :: (RegexBuilder a, RegexBuilder b) => a -> b -> RegexAST
-alternative a b = ASTAlternativeGroup (asList a) (asList b)
+capture :: (RegexBuilder a) => a -> RegexAST
+capture = ASTCaptureGroup . asList
+
+-- Polymorphic alternative infix function.
+-- It accepts both a single expression and a whole list.
+(<.|>) :: (RegexBuilder a, RegexBuilder b) => a -> b -> RegexAST
+(<.|>) a b = ASTAlternative (asList a) (asList b)

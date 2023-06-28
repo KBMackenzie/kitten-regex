@@ -28,8 +28,9 @@ data RegexAST =
     | ASTCharacterClass Predicate
     | ASTCount Int RegexAST
     | ASTCountRange (Maybe Int) (Maybe Int) RegexAST
-    | ASTAlternativeGroup [RegexAST] [RegexAST]
-    | ASTMatchGroup [RegexAST]
+    | ASTAlternative [RegexAST] [RegexAST]
+    | ASTCaptureGroup [RegexAST]
+    | ASTNonCaptureGroup [RegexAST]
     | ASTMatchStar RegexAST
     | ASTMatchQues RegexAST
     | ASTMatchPlus RegexAST
