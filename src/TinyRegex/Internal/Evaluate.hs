@@ -2,19 +2,19 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE StrictData #-}
 
-module TinyRegex.Evaluate
+module TinyRegex.Internal.Evaluate
 ( regexBuild
 , regexMatch
 , regexMatchT
 , runStart
 ) where
 
-import TinyRegex.Core
+import TinyRegex.Internal.Core
 import qualified Data.Text as Text
 import Control.Applicative ((<|>), empty)
 import Data.Functor ((<&>))
-import TinyRegex.Parser (parseRegex)
-import TinyRegex.Compile (compile)
+import TinyRegex.Internal.Parser (parseRegex)
+import TinyRegex.Internal.Compile (compile)
 import Data.List (singleton, groupBy, nub)
 import Data.Bifunctor (first)
 

@@ -1,8 +1,8 @@
-module TinyRegex.Compile
+module TinyRegex.Internal.Compile
 ( compile
 ) where
 
-import TinyRegex.Core (RegexAST(..), RegexComp(..), Predicate(..))
+import TinyRegex.Internal.Core (RegexAST(..), RegexComp(..), Predicate(..))
 import Control.Monad.State (State, evalState, get, modify)
 import Data.List (singleton)
 import Data.Functor ((<&>))

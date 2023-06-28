@@ -1,13 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module TinyRegex.Regexable
+module TinyRegex.Internal.Regexable
 ( Regexable(..)
 , ReString(..)
 , getGroup
 ) where
 
-import TinyRegex.Core
-import TinyRegex.Evaluate 
+import TinyRegex.Internal.Core
+import TinyRegex.Internal.Evaluate 
 import qualified Data.Text as Text
 import Data.Maybe (isJust)
 import Data.String (IsString(..))

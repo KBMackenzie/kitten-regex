@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE StrictData #-}
 
-module TinyRegex.Core
+module TinyRegex.Internal.Core
 ( RegexAST(..)
 , Regex(..)
 , RegexOutput(..)

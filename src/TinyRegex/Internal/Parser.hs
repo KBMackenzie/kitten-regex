@@ -1,14 +1,14 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE LambdaCase #-}
 
-module TinyRegex.Parser
+module TinyRegex.Internal.Parser
 ( Parser
 , parseExpr
 , parseRegex
 , isWordChar
 ) where
 
-import TinyRegex.Core
+import TinyRegex.Internal.Core
 import qualified Data.Text as Text
 import Text.Megaparsec ((<|>), (<?>))
 import qualified Text.Megaparsec as Mega

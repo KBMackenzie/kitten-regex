@@ -1,4 +1,4 @@
-import TinyRegex.Regexable
+import TinyRegex
 
 reTest :: IO ()
 reTest = do
