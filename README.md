@@ -8,7 +8,7 @@ It supports:
 3. Regex 'split' and 'replace' functions for strings
 4. A way to dynamically build a regex with combinator functions
 
-An example of it in action:
+An example of it in action, with a neat regex string for emails taken from [this website](https://regexr.com/3e48o):
 
 ```haskell
 emailRegex :: Regex
