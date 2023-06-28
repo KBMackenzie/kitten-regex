@@ -26,11 +26,10 @@ source-repository head
 library
   exposed-modules:
       Lib
+      TinyRegex.Compile
       TinyRegex.Core
-      TinyRegex.Engine
       TinyRegex.Evaluate
       TinyRegex.Parser
-      TinyRegex.Pretty
       TinyRegex.Regexable
   other-modules:
       Paths_TinyRegex

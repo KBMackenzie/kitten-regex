@@ -10,7 +10,7 @@ module TinyRegex.Parser
 
 import TinyRegex.Core
 import qualified Data.Text as Text
-import Text.Megaparsec ((<|>))
+import Text.Megaparsec ((<|>), (<?>))
 import qualified Text.Megaparsec as Mega
 import qualified Text.Megaparsec.Char as MChar
 import qualified Text.Megaparsec.Char.Lexer as Lexer
@@ -23,26 +23,26 @@ import Data.Void (Void)
 type Parser = Mega.Parsec Void Text.Text
 
 parsePlus :: Parser (RegexAST -> RegexAST)
-parsePlus = MatchPlus <$ MChar.char '+'
+parsePlus = ASTMatchPlus <$ MChar.char '+'
 
 parseStar :: Parser (RegexAST -> RegexAST)
-parseStar = MatchStar <$ MChar.char '*'
+parseStar = ASTMatchStar <$ MChar.char '*'
 
 parseQues :: Parser (RegexAST -> RegexAST)
-parseQues = MatchQues <$ MChar.char '?'
+parseQues = ASTMatchQues <$ MChar.char '?'
 
 braces :: Parser a -> Parser a
 braces = Mega.between (MChar.char '{') (MChar.char '}')
 
 parseCount :: Parser (RegexAST -> RegexAST)
-parseCount = Count <$> braces Lexer.decimal
+parseCount = ASTCount <$> braces Lexer.decimal <?> "integer number"
 
 parseRange :: Parser (RegexAST -> RegexAST)
 parseRange = braces $ do
-    start <- Mega.optional Lexer.decimal
+    start <- Mega.optional Lexer.decimal <?> "start of range"
     (void . MChar.char) ','
-    end   <- Mega.optional Lexer.decimal
-    return (CountRange start end)
+    end   <- Mega.optional Lexer.decimal <?> "end of range"
+    return (ASTCountRange start end)
 
 parseNumRange :: Parser (RegexAST -> RegexAST)
 parseNumRange = Mega.try parseCount <|> parseRange
@@ -94,13 +94,13 @@ escapeChar xs = Mega.choice
 {- Parse terms -}
 
 parseDot :: Parser RegexAST
-parseDot = AnyChar <$ MChar.char '.'
+parseDot = ASTAnyChar <$ MChar.char '.'
 
 parseChar :: Parser RegexAST
-parseChar = Verbatim . Text.singleton <$> escapeChar reserved
+parseChar = ASTVerbatim . Text.singleton <$> escapeChar reserved
 
 parseVerbatim :: Parser RegexAST
-parseVerbatim = Verbatim . Text.pack <$> Mega.some char
+parseVerbatim = ASTVerbatim . Text.pack <$> Mega.some char
     where char = Mega.try $ escapeChar reserved <* Mega.notFollowedBy isOperator
 
 parseSpecial :: Parser (Char -> Bool)
@@ -113,7 +113,7 @@ parseSpecial = Mega.choice
     , (not . isWordChar)   <$ MChar.string "\\W" ]
 
 parseSpecial' :: Parser RegexAST
-parseSpecial' = CharacterClass . Predicate <$> parseSpecial
+parseSpecial' = ASTCharacterClass . Predicate <$> parseSpecial
 
 {- Parsing character ranges (e.g. [a-Z]) -}
 
@@ -135,7 +135,7 @@ parseCharClass = brackets $ do
     fns <- Mega.many (Mega.try charRange <|> parseSpecial <|> charPred)
     isNot <- isJust <$> Mega.optional (MChar.char '^')
     let predicate = foldr (liftM2 (||)) (const False) fns
-    (return . CharacterClass . Predicate) (if isNot then not . predicate else predicate)
+    (return . ASTCharacterClass . Predicate) (if isNot then not . predicate else predicate)
     where
         char = escapeChar [ '\\', ']' ] <* Mega.notFollowedBy (MChar.char '-')
         charPred = (==) <$> Mega.try char
@@ -145,20 +145,25 @@ parens :: Parser a -> Parser a
 parens = Mega.between (MChar.char '(') (MChar.char ')')
 
 parseGroup :: Parser RegexAST
-parseGroup = MatchGroup <$> parens parseTokens
+parseGroup = ASTMatchGroup <$> parens parseTokens
 
+parseStart :: Parser RegexAST
+parseStart = ASTTokenStart <$ MChar.char '^'
+
+parseEnd :: Parser RegexAST
+parseEnd = ASTTokenEnd <$ MChar.char '$' 
 
 {- Combining everything: -}
 parseTerm :: Parser RegexAST
 parseTerm = Mega.choice
-    [ TokenStart <$ MChar.char '^'
-    , TokenEnd   <$ MChar.char '$'
-    , parseGroup
-    , parseCharClass
-    , parseSpecial'
-    , parseDot
-    , parseVerbatim
-    , parseChar     ]
+    [ parseStart        <?> "start (^)"
+    , parseEnd          <?> "eol ($)"
+    , parseGroup        <?> "capture group"
+    , parseCharClass    <?> "character class"
+    , parseSpecial'     <?> "character class"
+    , parseDot          <?> "dot (.)"
+    , parseVerbatim     <?> "sequence of characters"
+    , parseChar         <?> "single character"      ]
 
 parseToken :: Parser RegexAST
 parseToken = do
@@ -168,7 +173,7 @@ parseToken = do
     (return . p2 . p1) term
 
 parseAlt :: Parser ([RegexAST] -> RegexAST)
-parseAlt = flip AlternativeGroup <$> (MChar.char '|' >> parseTokens)
+parseAlt = flip ASTAlternativeGroup <$> (MChar.char '|' >> parseTokens)
 
 parseTokens :: Parser [RegexAST]
 parseTokens = do

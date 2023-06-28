@@ -13,25 +13,28 @@ import qualified Data.Text as Text
 
 newtype Predicate = Predicate { getPredicate :: Char -> Bool }
 instance Show Predicate where show _ = "<predicate>"
+
+-- A compiled regex newtype, meant to be used as an opaque type.
 newtype Regex = Regex [RegexComp]
 
 data RegexOutput = RegexOutput
     { groups    :: [(Int, Text.Text)]
     , leftovers :: Text.Text          } 
-    deriving (Show)
+    deriving (Eq, Show)
 
 data RegexAST =
-      Verbatim Text.Text
-    | AnyChar
-    | CharacterClass Predicate
-    | Count Int RegexAST
-    | CountRange (Maybe Int) (Maybe Int) RegexAST
-    | AlternativeGroup [RegexAST] [RegexAST]
-    | MatchGroup [RegexAST]
-    | MatchStar RegexAST
-    | MatchQues RegexAST
-    | MatchPlus RegexAST
-    | TokenStart | TokenEnd
+      ASTVerbatim Text.Text
+    | ASTAnyChar
+    | ASTCharacterClass Predicate
+    | ASTCount Int RegexAST
+    | ASTCountRange (Maybe Int) (Maybe Int) RegexAST
+    | ASTAlternativeGroup [RegexAST] [RegexAST]
+    | ASTMatchGroup [RegexAST]
+    | ASTMatchStar RegexAST
+    | ASTMatchQues RegexAST
+    | ASTMatchPlus RegexAST
+    | ASTTokenStart
+    | ASTTokenEnd
     deriving (Show)
 
 data RegexComp =

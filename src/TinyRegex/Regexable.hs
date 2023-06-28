@@ -10,11 +10,12 @@ import TinyRegex.Core
 import TinyRegex.Evaluate 
 import qualified Data.Text as Text
 import Data.Maybe (isJust)
+import Data.String (IsString(..))
 
 class Regexable a where
-    -- Safely compile a regex and match.
-    -- The two required functions:
+    -- Safely compile regex.
     buildEither :: a -> Either Text.Text Regex
+    -- Safely run a match.
     match :: Regex -> a -> Maybe RegexOutput
 
     -- A partial function meant to be used only with constant regex strings
@@ -29,18 +30,16 @@ class Regexable a where
     isMatch :: Regex -> a -> Bool
     isMatch = (isJust .) . match
 
-    -- Infix operator for 'match'.
+    -- Infix alias for 'match'.
     (<.*>) :: Regex -> a -> Maybe RegexOutput
     (<.*>) = match
 
-    -- Infix operator for 'isMatch'.
+    -- Infix alias for 'isMatch'.
     (<.?>) :: Regex -> a -> Bool
     (<.?>) = isMatch
 
-
 {- Text -}
 ------------------------------------------------------
-
 -- Regexable instance for Data.Text.
 -- It has more efficient functions than the default.
 instance Regexable Text.Text where
@@ -51,11 +50,8 @@ instance Regexable Text.Text where
     -- default definition provided in the typeclass.
     isMatch (Regex re) = isJust . runStart re
 
-
-
 {- String -}
 ------------------------------------------------------
-
 -- A small string wrapper so that I can define an instance of Regexable
 -- for strings at all, since that's sadly a limitation.
 newtype ReString = ReString { unReString :: String } deriving (Eq, Ord, Show)
@@ -66,6 +62,10 @@ instance Regexable ReString where
     buildEither = buildEither . Text.pack . unReString
     match regex = match regex . Text.pack . unReString
 
+-- Instance of 'IsString' so that ReString can be
+-- used with the 'OverloadedStrings' extension.
+instance IsString ReString where
+    fromString = ReString
 
 {- Helper functions: -}
 -------------------------------------------------
