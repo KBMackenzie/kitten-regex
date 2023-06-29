@@ -107,23 +107,16 @@ regexMatchT regex input = regexBuild regex >>= \x -> case regexMatch x input of
 
 {- Groups -}
 ---------------------------------------------------------------------
-type GroupMap a = State (Map.IntMap Text.Text) a
+type GroupMap = Map.IntMap Text.Text
 
--- Yes, I know this is a dirty little hack, but I enjoy using the State
--- monad in this way when I have to keep track of state through so many
--- layers of recursion.
-getGroups :: Int -> [Labels] -> GroupMap ()
-getGroups _ [] = return ()
-getGroups n ((TextOutput x) : xs) = do
-    let f = flip Text.append
-    modify (Map.insertWith f n x) >> getGroups n xs
-getGroups n ((LabelStart x) : xs) = getGroups x xs >> getGroups n xs
-getGroups n ((LabelEnd   x) : xs) = if x == n
-    then return ()
-    else getGroups n xs
+getGroups :: Int -> [Labels] -> GroupMap -> GroupMap
+getGroups _ [] m = m
+getGroups n ((TextOutput x) : xs) m = getGroups n xs (Map.insertWith (flip Text.append) n x m)
+getGroups n ((LabelStart x) : xs) m = getGroups n xs (getGroups x xs m)
+getGroups n ((LabelEnd   x) : xs) m = if x == n then m else getGroups n xs m
 
-runGetGroups :: [Labels] -> Map.IntMap Text.Text
-runGetGroups = flip execState Map.empty . getGroups 0
+runGetGroups :: [Labels] -> GroupMap
+runGetGroups xs = getGroups 0 xs Map.empty
 
 makeOutput :: (Output, Input) -> RegexOutput Text.Text
 makeOutput (xs, rest) = RegexOutput { groups = runGetGroups xs, leftovers = rest }
