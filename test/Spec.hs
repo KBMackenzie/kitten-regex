@@ -19,7 +19,7 @@ examples = do
     let inspect = emailRegex <.*> example
     print isValid -- It prints 'True'.
     print inspect -- It prints:
-    -- Just (RegexOutput {groups = [(0,"test@gmail.com"),(1,"gmail.")], leftovers = ""})
+    -- Just (RegexOutput {groups = fromList [(0,"test@gmail.com"),(1,"gmail.")], leftovers = ""})
 
 emailRegex' :: Regex
 emailRegex' = toRegex $
@@ -37,7 +37,7 @@ examples' = do
     let inspect = emailRegex' <.*> example
     print isValid -- It prints 'True'.
     print inspect -- It prints the exact same output as before:
-    -- Just (RegexOutput {groups = [(0,"test@gmail.com"),(1,"gmail.")], leftovers = ""})
+    -- Just (RegexOutput {groups = fromList [(0,"test@gmail.com"),(1,"gmail.")], leftovers = ""})
 
 assertion :: IO ()
 assertion = do

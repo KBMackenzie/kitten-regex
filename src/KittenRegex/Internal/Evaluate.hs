@@ -19,7 +19,7 @@ import KittenRegex.Internal.Parser (parseRegex)
 import KittenRegex.Internal.Compile (compile)
 import Data.Bifunctor (first, second)
 import Data.List (singleton)
-import Control.Monad.State (State, execState , modify)
+import Control.Monad.State (State, execState, modify)
 import qualified Data.IntMap.Strict as Map
 
 type Input = Text.Text

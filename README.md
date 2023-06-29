@@ -27,7 +27,7 @@ examples = do
     let inspect = emailRegex <.*> example
     print isValid -- It prints 'True'.
     print inspect -- It prints:
-    -- Just (RegexOutput {groups = [(0,"test@gmail.com"),(1,"gmail.")], leftovers = ""})
+    -- Just (RegexOutput {groups = fromList [(0,"test@gmail.com"),(1,"gmail.")], leftovers = ""})
 ```
 
 Disclaimer: You *shouldn't* validate emails with regex, this is just a convenient example!
@@ -63,7 +63,7 @@ examples' = do
     let inspect = emailRegex' <.*> example
     print isValid -- It prints 'True'.
     print inspect -- It prints the exact same output as before:
-    -- Just (RegexOutput {groups = [(0,"test@gmail.com"),(1,"gmail.")], leftovers = ""})
+    -- Just (RegexOutput {groups = fromList [(0,"test@gmail.com"),(1,"gmail.")], leftovers = ""})
 ```
 
 ## Supported Regex Patterns
@@ -78,6 +78,8 @@ The following Regex patterns are supported by this library:
 - Alternative branches with '|'. (e.g. `a(b|c)`, `a*b|c+`).
 - Generic character types (`\w`, `\s`, `\d`) and their negations (`\W`, `\S`, `\D`)
 - The start of line (^) and end of line ($) anchors.
+
+Additionally, through Regex combinators, this library supports completely new character classes made out of Haskell functions.
 
 [ To Do: ] 
 1. Make a better README.
