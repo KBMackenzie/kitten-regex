@@ -17,8 +17,10 @@ import Control.Applicative ((<|>), empty)
 import Data.Functor ((<&>))
 import KittenRegex.Internal.Parser (parseRegex)
 import KittenRegex.Internal.Compile (compile)
-import Data.List (singleton, groupBy, nub)
 import Data.Bifunctor (first, second)
+import Data.List (singleton)
+import Control.Monad.State (State, execState , modify)
+import qualified Data.IntMap.Strict as Map
 
 type Input = Text.Text
 type Output = [Labels]
@@ -105,21 +107,26 @@ regexMatchT regex input = regexBuild regex >>= \x -> case regexMatch x input of
 
 {- Groups -}
 ---------------------------------------------------------------------
-sepGroups :: Int -> [Text.Text] -> [Labels] -> [(Int, Text.Text)]
-sepGroups n ts [] = [(n, (Text.concat . reverse) ts)]
-sepGroups n ts ((LabelStart x) : xs) = sepGroups x [] xs ++ sepGroups n ts xs
-sepGroups n ts ((LabelEnd   x) : xs) = if x == n
-    then [(n, (Text.concat . reverse) ts)]
-    else sepGroups n ts xs
-sepGroups n ts ((TextOutput x) : xs) = sepGroups n (x:ts) xs
+type GroupMap a = State (Map.IntMap Text.Text) a
 
-getGroups :: [Labels] -> [(Int, Text.Text)]
-getGroups = zip [0..] . reverse . map joinGroup . nub . groupBy sameGroup . sepGroups 0 []
-    where sameGroup a b = fst a == fst b
-          joinGroup = Text.concat . map snd
+-- Yes, I know this is a dirty little hack, but I enjoy using the State
+-- monad in this way when I have to keep track of state through so many
+-- layers of recursion.
+getGroups :: Int -> [Labels] -> GroupMap ()
+getGroups _ [] = return ()
+getGroups n ((TextOutput x) : xs) = do
+    let f = flip Text.append
+    modify (Map.insertWith f n x) >> getGroups n xs
+getGroups n ((LabelStart x) : xs) = getGroups x xs >> getGroups n xs
+getGroups n ((LabelEnd   x) : xs) = if x == n
+    then return ()
+    else getGroups n xs
+
+runGetGroups :: [Labels] -> Map.IntMap Text.Text
+runGetGroups = flip execState Map.empty . getGroups 0
 
 makeOutput :: (Output, Input) -> RegexOutput Text.Text
-makeOutput (xs, rest) = RegexOutput { groups = getGroups xs, leftovers = rest }
+makeOutput (xs, rest) = RegexOutput { groups = runGetGroups xs, leftovers = rest }
 
 
 {- Splitting + Replacing -}

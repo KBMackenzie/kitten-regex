@@ -11,7 +11,7 @@ module KittenRegex.Internal.Core
 ) where
 
 import qualified Data.Text as Text
-import Data.Bifunctor (second)
+import qualified Data.IntMap.Strict as Map
 
 newtype Predicate = Predicate { getPredicate :: Char -> Bool }
 instance Show Predicate where show _ = "<predicate>"
@@ -20,15 +20,15 @@ instance Show Predicate where show _ = "<predicate>"
 newtype Regex = Regex [RegexComp]
 
 data RegexOutput a = RegexOutput
-    { groups    :: [(Int, a)]
-    , leftovers :: a        }
+    { groups    :: Map.IntMap a
+    , leftovers :: a            }
     deriving (Eq, Show)
 
 instance Functor RegexOutput where
-    fmap f (RegexOutput xs l) = RegexOutput (second f <$> xs) (f l)
+    fmap f (RegexOutput xs l) = RegexOutput (Map.map f xs) (f l)
 
 getGroup :: RegexOutput a -> Int -> Maybe a
-getGroup = flip lookup . groups
+getGroup = flip Map.lookup . groups
 
 data RegexAST =
       ASTVerbatim Text.Text

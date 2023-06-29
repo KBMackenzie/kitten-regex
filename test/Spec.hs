@@ -39,13 +39,16 @@ examples' = do
     print inspect -- It prints the exact same output as before:
     -- Just (RegexOutput {groups = [(0,"test@gmail.com"),(1,"gmail.")], leftovers = ""})
 
-{-
-    <.+> oneOrMore $ capture (
-        oneOrMore (wordChar <.|> char '-')
-        <.+> char '.'
-    )
--}
-
+assertion :: IO ()
+assertion = do
+    let re1 = build (ReString "ab+")
+    let re2 = build (ReString "abb*")
+    let str = ReString "abbbbbbbb"
+    let out1 = re1 <.*> str
+    let out2 = re2 <.*> str
+    print out1
+    print out2
+    print $ out1 == out2
 
 main :: IO ()
-main = examples' --putStrLn "Test suite not yet implemented"
+main = examples' --assertion -- examples' --putStrLn "Test suite not yet implemented"

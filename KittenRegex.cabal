@@ -41,6 +41,7 @@ library
   build-depends:
       base >=4.7 && <5
     , bytestring
+    , containers
     , megaparsec
     , mtl
     , text
@@ -58,6 +59,7 @@ executable KittenRegex-exe
       KittenRegex
     , base >=4.7 && <5
     , bytestring
+    , containers
     , megaparsec
     , mtl
     , text
@@ -76,6 +78,7 @@ test-suite KittenRegex-test
       KittenRegex
     , base >=4.7 && <5
     , bytestring
+    , containers
     , megaparsec
     , mtl
     , text
