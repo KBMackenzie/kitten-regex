@@ -26,6 +26,7 @@ type Input = Text.Text
 type Output = [Labels]
 type Evaluation = (Output, Input)
 type Evaluator = Maybe Evaluation
+type IsStart = Bool
 
 data Labels =
       TextOutput Text.Text
@@ -42,45 +43,43 @@ labelChar = labelPack . Text.singleton
 consOutput :: Output -> Evaluation -> Evaluation
 consOutput x = first (x ++)
 
-evaluate :: Input -> [RegexComp] -> Evaluator
-evaluate input (x:xs) = case x of
+evaluate :: Input -> [RegexComp] -> IsStart -> Evaluator
+evaluate input (x:xs) s = case x of
     (Sequence str) -> Text.stripPrefix str input >>= continue xs . (labelPack str,)
     (Character fn) -> Text.uncons input >>=
         \(c, rest) -> if getPredicate fn c
-            then (labelChar c `consOutput`) <$> evaluate rest xs
+            then (labelChar c `consOutput`) <$> evaluate rest xs False
             else empty
     (ZeroOrMany zs) -> do
-        let pathA = evaluate input zs >>= continue (x:xs)
-        let pathB = evaluate input xs
+        let pathA = evaluate input zs s >>= continue (x:xs)
+        let pathB = evaluate input xs s
         pathA <|> pathB
     (ZeroOrOne  zs) -> do
-        let pathA = evaluate input zs >>= continue xs
-        let pathB = evaluate input xs
+        let pathA = evaluate input zs s >>= continue xs
+        let pathB = evaluate input xs s
         pathA <|> pathB
     (Alternative as bs) -> do
-        let runPath ts = evaluate input (ts ++ xs)
+        let runPath ts = evaluate input (ts ++ xs) s
         runPath as <|> runPath bs
-    Start -> evaluate input xs
+    Start -> if s then evaluate input xs False else empty
     End -> ([],) <$> isEOL input
-    (GroupStart n) -> first ([LabelStart n] ++) <$> evaluate input xs
-    (GroupEnd n)   -> first ([LabelEnd   n] ++) <$> evaluate input xs
-evaluate input [] = Just ([], input)
+    (GroupStart n) -> first ([LabelStart n] ++) <$> evaluate input xs s
+    (GroupEnd n)   -> first ([LabelEnd   n] ++) <$> evaluate input xs s
+evaluate input [] _ = Just ([], input)
 
 continue :: [RegexComp] -> Evaluation -> Evaluator
-continue toks (output, rest) = (output `consOutput`) <$> evaluate rest toks
+continue toks (output, rest) = (output `consOutput`) <$> evaluate rest toks False
 
-runStart :: [RegexComp] -> Input -> Evaluator
-runStart (Start:xs) input = evaluate input xs
-runStart xs input = do
-    let pathA = evaluate input xs
-    let pathB = Text.uncons input >>= runStart xs . snd
+runStart :: IsStart -> [RegexComp] -> Input -> Evaluator
+runStart s xs input = do
+    let pathA = evaluate input xs s
+    let pathB = Text.uncons input >>= runStart False xs . snd
     pathA <|> pathB
 
-runStart' :: [RegexComp] -> Int -> Input -> Maybe (Int, Evaluation)
-runStart' (Start:xs) n input = (n,) <$> evaluate input xs
-runStart' xs n input = do
-    let pathA = (n,) <$> evaluate input xs
-    let pathB = Text.uncons input >>= runStart' xs (succ n) . snd
+runStart' :: IsStart -> [RegexComp] -> Int -> Input -> Maybe (Int, Evaluation)
+runStart' s xs n input = do
+    let pathA = (n,) <$> evaluate input xs s
+    let pathB = Text.uncons input >>= runStart' False xs (succ n) . snd
     pathA <|> pathB
 
 isEOL :: Input -> Maybe Text.Text
@@ -96,7 +95,7 @@ regexBuild = fmap (Regex . compile) . parseRegex
 {- Evaluator -}
 ---------------------------------------------------------------------
 regexMatch :: Regex -> Input -> Maybe (RegexOutput Text.Text)
-regexMatch (Regex re) input = runStart re input <&> makeOutput
+regexMatch (Regex re) input = runStart True re input <&> makeOutput
 
 -- Abstractions over types of input:
 regexMatchT :: Text.Text -> Input -> Either Text.Text (RegexOutput Text.Text)
@@ -125,16 +124,22 @@ makeOutput (xs, rest) = RegexOutput { groups = runGetGroups xs, leftovers = rest
 {- Splitting + Replacing -}
 ---------------------------------------------------------------------
 regexSplit :: Regex -> Input -> Maybe [Text.Text]
-regexSplit re@(Regex regex) input = do
-    (n, xs) <- second makeOutput <$> runStart' regex 0 input 
+regexSplit = regexSplit' True
+
+regexSplit' :: IsStart -> Regex -> Input -> Maybe [Text.Text]
+regexSplit' s re@(Regex regex) input = do
+    (n, xs) <- second makeOutput <$> runStart' s regex 0 input 
     let start = Text.take n input
     let end = leftovers xs
-    Just [start] <> (regexSplit re end <|> Just [end])
+    Just [start] <> (regexSplit' False re end <|> Just [end])
 
 regexReplace :: Regex -> Input -> Text.Text -> Maybe Text.Text
-regexReplace re@(Regex regex) input replacement = do
-    (n, xs) <- second makeOutput <$> runStart' regex 0 input
+regexReplace = regexReplace' True
+
+regexReplace' :: IsStart -> Regex -> Input -> Text.Text -> Maybe Text.Text
+regexReplace' s re@(Regex regex) input replacement = do
+    (n, xs) <- second makeOutput <$> runStart' s regex 0 input
     let start = Text.take n input
     let end = leftovers xs
     let str = start `Text.append` replacement
-    Just str <> (regexReplace re end replacement <|> Just end)
+    Just str <> (regexReplace' False re end replacement <|> Just end)

@@ -59,7 +59,7 @@ instance Regexable Text.Text where
     replace = regexReplace
 
     -- A more efficient 'isMatch' definition.
-    isMatch (Regex re) = isJust . runStart re
+    isMatch (Regex re) = isJust . runStart True re
 
 {- String -}
 ------------------------------------------------------

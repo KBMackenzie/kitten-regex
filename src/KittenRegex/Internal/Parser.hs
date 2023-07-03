@@ -131,22 +131,26 @@ parseSpecial = Mega.choice
 parseSpecial' :: Parser RegexAST
 parseSpecial' = ASTCharacterClass . Predicate <$> parseSpecial
 
+-- Reserved chars in character classes.
+classReserved :: [Char]
+classReserved = [ '\\', ']', '^' ]
+
 {- Parsing character ranges (e.g. [a-Z]) -}
 charRange :: Parser (Char -> Bool)
 charRange = do
-    a <- escapeChar [ '\\', ']' ]
+    a <- escapeChar classReserved
     (void . MChar.char) '-'
-    b <- escapeChar [ '\\', ']' ]
+    b <- escapeChar classReserved
     return (\x -> x `elem` [a..b])
 
 parseCharClass :: Parser RegexAST
 parseCharClass = brackets $ do
-    fns <- Mega.many (Mega.try charRange <|> parseSpecial <|> charPred)
     isNot <- isJust <$> Mega.optional (MChar.char '^')
+    fns <- Mega.many (Mega.try charRange <|> parseSpecial <|> charPred)
     let predicate = foldr (liftM2 (||)) (const False) fns
     (return . ASTCharacterClass . Predicate) (if isNot then not . predicate else predicate)
     where
-        char = escapeChar [ '\\', ']' ] <* Mega.notFollowedBy (MChar.char '-')
+        char = escapeChar classReserved <* Mega.notFollowedBy (MChar.char '-')
         charPred = (==) <$> Mega.try char
 
 {- Parsing capture groups (e.g. a(b*)c) -}
