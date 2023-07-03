@@ -1,14 +1,12 @@
-A small, minimalistic Haskell Regex library written in pure Haskell. I initially worked on this as a side feature for my esotering programming language [Meowscript](https://github.com/KBMackenzie/Meowscript) and as a learning exercise, but it escalated into something usable!
+A small, minimalistic Haskell Regex library written in pure Haskell. This library supports a __subset of PCRE__. You can see all the supported patterns [here](#supported-regex-patterns).
 
-This library supports a __subset of PCRE__. You can see all the supported patterns [here](#supported-regex-patterns).
+I made this for fun as a side feature for my esoteric programming language [Meowscript](https://github.com/KBMackenzie/Meowscript) and as a learning exercise. It's **not meant** to be used in production!
 
-This library is primarily based on `Data.Text` instead of Haskell's native String type (due to the inefficiency of Haskell's native String type). It supports regexing with both Text, ByteString *and* String, however. (Though Strings have to be wrapped in a special newtype.)
+This library is primarily based on `Data.Text` instead of Haskell's native String type (due to the inefficiency of Haskell's native String type). It supports regexing with both Text, ByteString *and* String, however. (Though Strings have to be wrapped in a special newtype, *'ReString'*.)
 
-It supports:
-1. Matching regex such as the following: (more details later)
-2. Capture groups and non-capture groups
-3. Regex 'split' and 'replace' functions for strings
-4. A way to dynamically build a regex with combinator functions
+You can see the supported regex patterns [here](#supported-regex-patterns).
+
+This library has functions for **matching**, **splitting** strings with regex and **replacing** regex matches in strings with another string.
 
 ## Regex Matching
 An example of it in action, with a neat regex string for email validation taken from [this website](https://regexr.com/3e48o):
