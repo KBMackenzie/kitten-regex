@@ -19,7 +19,7 @@ import KittenRegex.Internal.Parser (parseRegex)
 import KittenRegex.Internal.Compile (compile)
 import Data.Bifunctor (first, second)
 import Data.List (singleton)
-import Control.Monad.State (State, execState, modify)
+--import Control.Monad.State (State, execState, modify)
 import qualified Data.IntMap.Strict as Map
 
 type Input = Text.Text
@@ -62,7 +62,7 @@ evaluate input (x:xs) s = case x of
         let runPath ts = evaluate input (ts ++ xs) s
         runPath as <|> runPath bs
     Start -> if s then evaluate input xs False else empty
-    End -> ([],) <$> isEOL input
+    End -> if Text.null input then Just ([], input) else empty
     (GroupStart n) -> first ([LabelStart n] ++) <$> evaluate input xs s
     (GroupEnd n)   -> first ([LabelEnd   n] ++) <$> evaluate input xs s
 evaluate input [] _ = Just ([], input)
@@ -82,10 +82,13 @@ runStart' s xs n input = do
     let pathB = Text.uncons input >>= runStart' False xs (succ n) . snd
     pathA <|> pathB
 
+{- Unused currently, as $ should match only the end of the string.
+ - My evaluator doesn't support multiline matching with ^, so it shouldn't support it with $.
 isEOL :: Input -> Maybe Text.Text
 isEOL input = if Text.null input
     then Just input
     else Text.stripPrefix "\n" input <|> Text.stripPrefix "\r\n" input <|> Text.stripPrefix "\r" input
+-}
 
 {- Building -}
 ---------------------------------------------------------------------

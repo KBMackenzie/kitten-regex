@@ -77,7 +77,10 @@ The following Regex patterns are supported by this library:
 - Repetition ranges between curly braces. (e.g. `a{3}`, `b{3, 5}`, `c{3,}`, etc).
 - Alternative branches with '|'. (e.g. `a(b|c)`, `a*b|c+`).
 - Generic character types (`\w`, `\s`, `\d`) and their negations (`\W`, `\S`, `\D`)
-- The start of line (^) and end of line ($) anchors.
+- The start of string (^) and end of string ($) anchors.
+
+**Note:** The ^ and $ anchors match **only** the start and end of the string, respectively.
+This library doesn't yet support multiline matching.
 
 Additionally, through Regex combinators, this library supports completely new character classes made out of Haskell functions.
 
