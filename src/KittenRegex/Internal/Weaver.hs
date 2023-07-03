@@ -4,7 +4,7 @@ module KittenRegex.Internal.Weaver
 , char
 , charWhere
 , digit
-, space
+, whitespace
 , letter
 , wordChar
 , anyChar
@@ -75,8 +75,8 @@ charWhere = ASTCharacterClass . Predicate
 digit :: RegexAST
 digit = charWhere isDigit
 
-space :: RegexAST
-space = charWhere isSpace
+whitespace :: RegexAST
+whitespace = charWhere isSpace
 
 letter :: RegexAST
 letter = charWhere isLetter

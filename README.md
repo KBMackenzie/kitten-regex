@@ -9,32 +9,27 @@ You can see the supported regex patterns [here](#supported-regex-patterns).
 This library has functions for **matching**, **splitting** strings with regex and **replacing** regex matches in strings with another string.
 
 ## Regex Matching
-An example of it in action, with a neat regex string for email validation taken from [this website](https://regexr.com/3e48o):
+An example of it in action, with a little regex to get the contents of an HTML img tag:
 
 ```haskell
-emailRegex :: Regex
-emailRegex = build (ReString "^[\\w\\-\\.]+@([\\w-]+\\.)+[\\w-]{2,4}$")
+imgTagRe :: Regex
+imgTagRe = build $ ReString "<\\s*img(.*)>"
 
-validateEmail :: ReString -> Bool
-validateEmail email = emailRegex <.?> email
-
-examples :: IO ()
-examples = do
-    let example = ReString "test@gmail.com"
-    let isValid = validateEmail example
-    let inspect = emailRegex <.*> example
-    print isValid -- It prints 'True'.
-    print inspect -- It prints:
-    -- Just (RegexOutput {groups = fromList [(0,"test@gmail.com"),(1,"gmail.")], leftovers = ""})
+imageExample :: IO ()
+imageExample = do
+    let tag = ReString "<img src=\"example.png\" />"
+    print $ imgTagRe <.?> tag -- Prints true.
+    print $ imgTagRe <.*> tag -- Prints:
+    -- Just (RegexOutput {groups = fromList [(0,"<img src=\"example.png\" />"),(1," src=\"example.png\" /")], leftovers = ""})
 ```
+Do note that 'build' is a partial function. It should only be used when you're sure the regex string contains no syntax errors. A safe alternative is 'buildEither', which has a return type of `Either Text Regex`.
 
-Disclaimer: You *shouldn't* validate emails with regex, this is just a convenient example!
-
-Additionally, while I wrapped the strings in the example above in the ReString newtype, you don't *have* to. The Regexable typeclass (which handles regex compilation and matching) has instances for Text and ByteString too.
+## String vs Text
+While I wrapped the strings in the example above in the ReString newtype, you don't *have* to. The Regexable typeclass (which handles regex compilation and matching) has instances for Text and ByteString too.
 
 I heavily encourage you to use Text for everything Regex-related, in fact! The inner workings of the Regex engine use Text already; every other string type is just converted to Text behind the scenes.
 
-> *"Why not have a raw instance for String?"*
+> *"Why not just have an instance for String?"*
 
 Because String is a type alias for [Char], and [Char] cannot be made an instance of a typeclass without using the FlexibleInstances language extension and allowing for some possible unpredictability down the road with the compiler, and I didn't think that was worth the trouble.
 
@@ -42,26 +37,17 @@ The ReString newtype is an instance of IsString, too, so the OverloadedStrings e
 
 
 ## Dynamically Building Regexes
-An example of how to dynamically build that same email validation regex above with combinators:
+An example of how to dynamically build that same regex above with combinators:
 
 ```haskell
-emailRegex' :: Regex
-emailRegex' = toRegex $
-    startOfLine
-    <.+> oneOrMore (wordChar <.|> char '-' <.|> char '.')
-    <.+> char '@'
-    <.+> capture (oneOrMore (wordChar <.|> char '-') <.+> char '.')
-    <.+> amountBetween 2 4 (wordChar <.|> char '-')
-    <.+> endOfLine
-
-examples' :: IO ()
-examples' = do
-    let example = ReString "test@gmail.com"
-    let isValid = emailRegex' <.?> example
-    let inspect = emailRegex' <.*> example
-    print isValid -- It prints 'True'.
-    print inspect -- It prints the exact same output as before:
-    -- Just (RegexOutput {groups = fromList [(0,"test@gmail.com"),(1,"gmail.")], leftovers = ""})
+imgTagRe' :: Regex
+imgTagRe' = toRegex $
+    char '<'
+    <.+> anyAmountOf whitespace
+    <.+> string "img"
+    <.+> capture (anyAmountOf anyChar)
+    <.+> char '>'
+    -- Just (RegexOutput {groups = fromList [(0,"<img src=\"example.png\" />"),(1," src=\"example.png\" /")], leftovers = ""})
 ```
 
 ## Supported Regex Patterns

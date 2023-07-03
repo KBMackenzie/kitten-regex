@@ -70,6 +70,9 @@ test-suite KittenRegex-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      Examples.Assorted
+      Examples.Email
+      Examples.HTML
       Paths_KittenRegex
   hs-source-dirs:
       test

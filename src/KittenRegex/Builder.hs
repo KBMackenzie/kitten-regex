@@ -4,7 +4,7 @@ module KittenRegex.Builder
 , char
 , charWhere
 , digit
-, space
+, whitespace
 , letter
 , wordChar
 , anyChar
